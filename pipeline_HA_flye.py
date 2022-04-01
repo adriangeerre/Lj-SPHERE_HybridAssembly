@@ -218,11 +218,14 @@ def plot_coverage(in_dir, out_dir, memory, folder):
 	if os.path.isdir("60-Plots/" + folder) == False: os.mkdir("60-Plots/" + folder)
 
 	# Number of contigs
-	num_contigs = len([1 for line in open("30-Unicycler/{}/flye/assembly.fasta".format(folder)) if line.startswith(">")])
+	if os.path.exists("30-Unicycler/{}/flye/assembly.fasta".format(folder)):
+		num_contigs = len([1 for line in open("30-Unicycler/{}/flye/assembly.fasta".format(folder)) if line.startswith(">")])
+	else:
+		num_contigs = 1
 
 	# GWF
 	inputs = ["{}/Illumina.cov".format(in_dir), "{}/Nanopore.cov".format(in_dir)]
-	outputs = ["{}/{}.pdf".format(out_dir, num) for num in range(1,num_contigs)]
+	outputs = ["{}/{}.pdf".format(out_dir, num) for num in range(1,num_contigs) if os.path.exists("30-Unicycler/{}/flye/assembly.fasta".format(folder))]
 	options = {'cores': 1,'memory': '{}g'.format(memory), 'queue': 'short', 'walltime': '2:00:00'}
 
 	spec='''
