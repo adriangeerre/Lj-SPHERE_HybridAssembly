@@ -275,7 +275,7 @@ def plot_coverage(in_dir, out_dir, memory, folder):
 
 	# GWF
 	inputs = ["{}/Illumina.cov".format(in_dir), "{}/Nanopore.cov".format(in_dir)]
-	outputs = ["{}/{}.pdf".format(out_dir, num) for num in range(1,num_contigs) if os.path.exists("30-Unicycler/{}/flye/assembly.fasta".format(folder))]
+	outputs = ["{}/{}.pdf".format(out_dir, num) for num in range(1,num_contigs+1) if os.path.exists("30-Unicycler/{}/flye/assembly.fasta".format(folder))]
 	options = {'cores': 1,'memory': '{}g'.format(memory), 'queue': 'short', 'walltime': '2:00:00'}
 
 	spec='''
