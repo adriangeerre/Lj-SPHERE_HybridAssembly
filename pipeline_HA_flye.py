@@ -14,7 +14,7 @@ assembler. """
 
 import os
 import sys
-from datetime import datetime
+import datetime
 from gwf import Workflow, AnonymousTarget
 
 gwf = Workflow(defaults={"account": "CCRP_Data"})
@@ -39,6 +39,11 @@ def qc_illumina(illumina_1, illumina_2, out_dir, threads, memory, folder):
 	options = {'cores': '{}'.format(threads),'memory': '{}g'.format(memory), 'queue': 'normal', 'walltime': '2:00:00'}
 
 	spec='''
+	# Source conda to work with environments
+	source ~/programas/minconda3.9/etc/profile.d/conda.sh
+
+	# FastQC
+	conda activate ha-flye
 	fastqc -t {threads} -o {out_dir} {illumina_1} {illumina_2}
 	'''.format(illumina_1=illumina_1, illumina_2=illumina_2, out_dir=out_dir, threads=threads)
 
@@ -55,6 +60,11 @@ def qc_nanopore(nanopore, out_dir, threads, memory, folder):
 	options = {'cores': '{}'.format(threads),'memory': '{}g'.format(memory), 'queue': 'normal', 'walltime': '4:00:00'}
 
 	spec='''
+	# Source conda to work with environments
+	source ~/programas/minconda3.9/etc/profile.d/conda.sh
+
+	# NanoPlot
+	conda activate NanoQC
 	NanoPlot -o {out_dir} -p {prefix} --info_in_report --N50 --title {title} --fastq {nanopore} --threads {threads}
 	'''.format(nanopore=nanopore, out_dir=out_dir, prefix="{}-".format(nanopore.split("/")[-1].replace(".fastq.gz","")), title=nanopore.split("/")[-1], threads=threads)
 
@@ -72,6 +82,11 @@ def correct_illumina(illumina_1, illumina_2, illumina_corr_1, illumina_corr_2, o
 	options = {'cores': '{}'.format(threads),'memory': '{}g'.format(memory), 'queue': 'normal', 'walltime': '24:00:00'}
 
 	spec='''
+	# Source conda to work with environments
+	source ~/programas/minconda3.9/etc/profile.d/conda.sh
+
+	# SPAdes
+	conda activate SPAdes
 	spades.py -1 {illumina_1} -2 {illumina_2} -o {out_dir} --only-error-correction -t {threads} -m {memory}
 	cat {out_dir}/corrected/{illumina_corr_1} {out_dir}/corrected/{illumina_corr_2} > {out_dir}/corrected/illumina.corrected.fastq.gz
 	'''.format(illumina_1=illumina_1, illumina_2=illumina_2, illumina_corr_1=illumina_corr_1, illumina_corr_2=illumina_corr_2, out_dir=out_dir, threads=threads, memory=memory)
@@ -90,6 +105,11 @@ def correct_nanopore(nanopore, illumina_corr, out_dir, threads, memory, folder):
 	options = {'cores': '{}'.format(threads),'memory': '{}g'.format(memory), 'queue': 'normal', 'walltime': '24:00:00'}
 
 	spec='''
+	# Source conda to work with environments
+	source ~/programas/minconda3.9/etc/profile.d/conda.sh
+
+	# LoRDEC
+	conda activate ha-flye
 	lordec-correct -i {nanopore} -2 {illumina_corr} -k 19 -s 4 -T {threads} -p -o {out_dir}/nanopore.kmer19.fasta
 	lordec-correct -i {out_dir}/nanopore.kmer19.fasta -2 {illumina_corr} -k 31 -s 3 -T {threads} -p -o {out_dir}/nanopore.kmer31.fasta
 	lordec-correct -i {out_dir}/nanopore.kmer31.fasta -2 {illumina_corr} -k 41 -s 3 -T {threads} -p -o {out_dir}/nanopore.corrected.fasta
@@ -109,6 +129,11 @@ def flye_assembly(nanopore_corr, out_dir, threads, memory, folder):
 	options = {'cores': '{}'.format(threads),'memory': '{}g'.format(memory), 'queue': 'normal', 'walltime': '12:00:00'}
 
 	spec='''
+	# Source conda to work with environments
+	source ~/programas/minconda3.9/etc/profile.d/conda.sh
+
+	# Flye
+	conda activate ha-flye
 	flye --nano-corr {nanopore_corr} --plasmids --out-dir {out_dir} --threads {threads}
 	'''.format(nanopore_corr=nanopore_corr, out_dir=out_dir, threads=threads)
 
@@ -126,6 +151,11 @@ def unicycler(assembly, illumina_corr_1, illumina_corr_2, nanopore_corr, out_dir
 	options = {'cores': '{}'.format(threads),'memory': '{}g'.format(memory), 'queue': 'normal', 'walltime': '12:00:00'}
 
 	spec='''
+	# Source conda to work with environments
+	source ~/programas/minconda3.9/etc/profile.d/conda.sh
+
+	# Unicycler
+	conda activate Unicycler
 	unicycler -1 {illumina_corr_1} -2 {illumina_corr_2} --existing_long_read_assembly {assembly} -l {nanopore_corr} --threads {threads} --keep 2 --verbosity 2 -o {out_dir}
 	'''.format(assembly=assembly, illumina_corr_1=illumina_corr_1, illumina_corr_2=illumina_corr_2, nanopore_corr=nanopore_corr, out_dir=out_dir, threads=threads)
 
@@ -143,6 +173,11 @@ def quast(assembly, out_dir, threads, memory, folder):
 	options = {'cores': '{}'.format(threads),'memory': '{}g'.format(memory), 'queue': 'normal', 'walltime': '12:00:00'}
 
 	spec='''
+	# Source conda to work with environments
+	source ~/programas/minconda3.9/etc/profile.d/conda.sh
+
+	# Quast
+	conda activate Quast
 	quast -o {out_dir} -t {threads} {assembly}
 	'''.format(assembly=assembly, out_dir=out_dir, threads=threads)
 
@@ -160,6 +195,11 @@ def align_illumina(assembly, illumina_corr_1, illumina_corr_2, out_dir, threads,
 	options = {'cores': '{}'.format(threads),'memory': '{}g'.format(memory), 'queue': 'normal', 'walltime': '4:00:00'}
 
 	spec='''
+	# Source conda to work with environments
+	source ~/programas/minconda3.9/etc/profile.d/conda.sh
+
+	# Bowtie2 + Samtools
+	conda activate ha-flye
 	mkdir -p {in_dir}/index_contigs
 	bowtie2-build --threads {threads} {assembly} {in_dir}/index_contigs/index
 	bowtie2 -x {in_dir}/index_contigs/index -1 {illumina_corr_1} -2 {illumina_corr_2} -S {out_dir}/Illumina.sam --threads {threads} 2> {out_dir}/bowtie2.log
@@ -183,6 +223,11 @@ def align_nanopore(assembly, nanopore_corr, out_dir, threads, memory, folder):
 	options = {'cores': '{}'.format(threads),'memory': '{}g'.format(memory), 'queue': 'normal', 'walltime': '4:00:00'}
 
 	spec='''
+	# Source conda to work with environments
+	source ~/programas/minconda3.9/etc/profile.d/conda.sh
+
+	# Minimap2 + Samtools
+	conda activate ha-flye
 	minimap2 -a -o {out_dir}/Nanopore.sam -t {threads} -x map-ont {assembly} {nanopore_corr}
 
 	samtools view -bS {out_dir}/Nanopore.sam -@ {threads} > {out_dir}/Nanopore.bam
@@ -205,6 +250,11 @@ def coverage(in_dir, out_dir, memory, folder):
 	options = {'cores': 1,'memory': '{}g'.format(memory), 'queue': 'short', 'walltime': '2:00:00'}
 
 	spec='''
+	# Source conda to work with environments
+	source ~/programas/minconda3.9/etc/profile.d/conda.sh
+
+	# Bedtools
+	conda activate Bedtools
 	bedtools genomecov -d -ibam {in_dir}/Illumina.sort.bam > {out_dir}/Illumina.cov
 	bedtools genomecov -d -ibam {in_dir}/Nanopore.sort.bam > {out_dir}/Nanopore.cov
 	'''.format(in_dir=in_dir, out_dir=out_dir)
@@ -229,27 +279,136 @@ def plot_coverage(in_dir, out_dir, memory, folder):
 	options = {'cores': 1,'memory': '{}g'.format(memory), 'queue': 'short', 'walltime': '2:00:00'}
 
 	spec='''
+	# Source conda to work with environments
+	source ~/programas/minconda3.9/etc/profile.d/conda.sh
+
+	# R
+	conda activate Renv
 	Rscript coverage.R -i {in_dir} -o {out_dir}
 	'''.format(in_dir=in_dir, out_dir=out_dir)
 
 	return AnonymousTarget(inputs=inputs, outputs=outputs, options=options, spec=spec)
 
 # Annotation
-def prokka_annot(assembly, out_dir, threads, memory, date, folder):
+def prokka_annot(assembly, out_dir, threads, memory, dates, folder):
 	# Folder structure
 	if os.path.isdir("70-Prokka") == False: os.mkdir("70-Prokka")
 	if os.path.isdir("70-Prokka/" + folder) == False: os.mkdir("70-Prokka/" + folder)
 
 	# GWF
 	inputs = ["{}".format(assembly)]
-	outputs = ["{}/PROKKA_{}.{}".format(out_dir, date, ext) for ext in ["err","faa","ffn","fna","fsa","gbk","gff","log","sqn","tbl","tsv","txt"]]
+	outputs = ["{}/prokka_{}.{}".format(out_dir, folder, ext) for ext in ["err","faa","ffn","fna","fsa","gbk","gff","log","sqn","tbl","tsv","txt"]]
 	options = {'cores': '{}'.format(threads), 'memory': '{}g'.format(memory), 'queue': 'short', 'walltime': '2:00:00'}
 
 	spec='''
-	prokka --force --cpus {threads} --outdir {out_dir} {assembly}
-	'''.format(assembly=assembly, out_dir=out_dir, threads=threads)
+	# Source conda to work with environments
+	source ~/programas/minconda3.9/etc/profile.d/conda.sh
+
+	# Prokka
+	conda activate Prokka
+	prokka --force --cpus {threads} --outdir {out_dir} --prefix {folder} {assembly}
+	'''.format(assembly=assembly, out_dir=out_dir, threads=threads, folder=folder)
 
 	return AnonymousTarget(inputs=inputs, outputs=outputs, options=options, spec=spec)
+
+def assembly_validation(assembly, database, out_dir, diamond_db, threads, memory, folder):
+	# Folder structure
+	if os.path.isdir("80-Validation") == False: os.mkdir("80-Validation")
+	if os.path.isdir("80-Validation/" + folder) == False: os.mkdir("80-Validation/" + folder)
+
+	# GWF
+	inputs = ["{}".format(assembly)]
+	outputs = ["{}/Busco/short_summary.specific.{}.Busco.txt".format(out_dir,database), "{}/CheckM/results.tsv".format(out_dir)]
+	options = {'cores': '{}'.format(threads), 'memory': '{}g'.format(memory), 'queue': 'normal', 'walltime': '2:00:00'}
+	spec='''
+	# Source conda to work with environments
+	source ~/programas/minconda3.9/etc/profile.d/conda.sh
+
+	# BUSCO
+	conda activate Busco
+	busco -m genome -i {assembly} -o {out_dir}/Busco -l {database} -f
+
+	# CheckM
+	conda activate CheckM
+	checkm lineage_wf -x fasta -t {threads} {assembly_folder} {assembly} {out_dir}/CheckM --reduced_tree
+	checkm qa {out_dir}/CheckM/lineage.ms -f {out_dir}/CheckM/results.tsv --tab_table -t {threads}
+	'''.format(assembly=assembly, assembly_folder=assembly.strip("assembly.fasta"), database=database, out_dir=out_dir, threads=threads)
+
+	return AnonymousTarget(inputs=inputs, outputs=outputs, options=options, spec=spec)
+
+def diamond(out_dir, diamond_db, threads, memory, folder):
+	# Folder structure
+	if os.path.isdir("80-Validation") == False: os.mkdir("80-Validation")
+	if os.path.isdir("80-Validation/" + folder) == False: os.mkdir("80-Validation/" + folder)
+
+	# GWF
+	inputs = ["70-Prokka/{}/prokka_{}.faa".format(folder, folder)]
+	outputs = ["{}/{}.diamond.tsv".format(out_dir, folder)]
+	options = {'cores': '{}'.format(threads), 'memory': '{}g'.format(memory), 'queue': 'normal', 'walltime': '6:00:00'}
+	spec='''
+	# Source conda to work with environments
+	source ~/programas/minconda3.9/etc/profile.d/conda.sh
+
+	# Diamond (db pre-computed)
+	conda activate Diamond
+	diamond blastp --query 70-Prokka/{folder}/prokka_{folder}.faa --db {diamond_db} --outfmt 6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore slen qlen sseq qseq --threads {threads} --out {out_dir}/{folder}.diamond.tsv --un {out_dir}/{folder}.diamond.unalign.fasta --unfmt fasta --fast
+	'''.format(out_dir=out_dir, diamond_db=diamond_db, folder=folder, threads=threads)
+
+	return AnonymousTarget(inputs=inputs, outputs=outputs, options=options, spec=spec)
+
+def fastani(hybrid_assembly, illumina_genomes, out_dir, threads, memory, folder):
+	# Folder structure
+	if os.path.isdir("90-FastANI") == False: os.mkdir("90-FastANI")
+	if os.path.isdir("90-FastANI/" + folder) == False: os.mkdir("90-FastANI/" + folder)
+
+	# GWF
+	inputs = ["{}".format(hybrid_assembly), "{}".format(illumina_genomes)]
+	outputs = ["{}/{}.fastani.tsv".format(out_dir, folder)]
+	options = {'cores': '{}'.format(threads), 'memory': '{}g'.format(memory), 'queue': 'normal', 'walltime': '00:30:00'}
+	spec='''
+	# Source conda to work with environments
+	source ~/programas/minconda3.9/etc/profile.d/conda.sh
+
+	# FastANI
+	conda activate FastANI
+	fastANI -q {hybrid_assembly} --rl {illumina_genomes} -o {out_dir}/{folder}.fastani.tsv -t {threads}
+	'''.format(hybrid_assembly=hybrid_assembly, illumina_genomes=illumina_genomes, out_dir=out_dir, folder=folder, threads=threads)
+
+	return AnonymousTarget(inputs=inputs, outputs=outputs, options=options, spec=spec)
+
+# Database
+#---------
+
+file_path = "LjSphere_taxonomy.csv"
+
+# Create dict from csv
+def create_dict(path):
+	d = {}
+	f = open(path, "r")
+	for l in f:
+		l = l.split("\t")
+		d[l[0]] = l[4]
+	return d
+
+LjTaxa = create_dict(file_path)
+
+# Busco databases
+busco_dict = {'Actinomycetales': 'actinobacteria_class_odb10', 'Flavobacteriales': 'flavobacteriales_odb10', 'Bacillales': 'bacillales_odb10', 'Burkholderiales': 'burkholderiales_odb10', 'Caulobacterales': 'alphaproteobacteria_odb10', 'Rhizobiales': 'rhizobiales_odb10', 'Sphingomonadales': 'sphingomonadales_odb10', 'Pseudomonadales': 'pseudomonadales_odb10', 'Xanthomonadales': 'xanthomonadales_odb10', 'NA': 'NA'}
+
+# DiamondDB
+diamond_db = "/home/agomez/CCRP_Data/AGR/Data/UniProt/BacterialDB_diamond/uniprot_bacterial"
+
+## Dates
+#-------
+
+di = datetime.date(2022,1,1)
+df = datetime.datetime.today().date()
+
+dates = []
+
+while di <= df:
+	dates.append(datetime.datetime.strftime(di,'%m%d%Y'))
+	di += datetime.timedelta(days=1)
 
 # Execution
 #----------
@@ -275,7 +434,6 @@ for row in f:
 	folder = row[3]
 	illumina_corr_1 = row[1].split("/")[-1].replace(".gz","") + ".00.0_0.cor.fastq.gz"
 	illumina_corr_2 = row[2].split("/")[-1].replace(".gz","") + ".00.0_0.cor.fastq.gz"
-	date=datetime.today().strftime('%m%d%Y')
 
 	# 01 QC
 	gwf.target_from_template('{}_01_qc_illumina'.format(folder), qc_illumina(illumina_1=row[1], illumina_2=row[2], out_dir="01-QC/{}/Illumina".format(folder), threads=4, memory=8, folder=folder))
@@ -305,4 +463,13 @@ for row in f:
 	gwf.target_from_template("{}_60_plot_coverage".format(folder), plot_coverage(in_dir="50-Coverage/{}".format(folder), out_dir="60-Plots/{}".format(folder), memory=8, folder=folder))
 
 	# 70 Annotation
-	gwf.target_from_template("{}_70_annotation".format(folder), prokka_annot(assembly="30-Unicycler/{}/flye/assembly.fasta".format(folder), out_dir="70-Prokka/{}".format(folder), threads=4, memory=16, date=date, folder=folder))
+	gwf.target_from_template("{}_70_annotation".format(folder), prokka_annot(assembly="30-Unicycler/{}/flye/assembly.fasta".format(folder), out_dir="70-Prokka/{}".format(folder), threads=4, memory=16, dates=dates, folder=folder))
+
+	# 80 Validation
+	database = busco_dict[LjTaxa[folder]]
+	if database != "NA":
+		gwf.target_from_template("{}_80_busco".format(folder), assembly_validation(assembly="30-Unicycler/{}/flye/assembly.fasta".format(folder), database=database, out_dir="80-Validation/{}".format(folder), diamond_db="{}".format(diamond_db), threads=4, memory=24, folder=folder))
+	gwf.target_from_template("{}_80_diamond".format(folder), diamond(out_dir="80-Validation/{}/Diamond".format(folder), diamond_db="{}".format(diamond_db), threads=8, memory=32, folder=folder))
+
+	# 90 FastANI
+	gwf.target_from_template("{}_90_fastani".format(folder), fastani(hybrid_assembly="30-Unicycler/{}/flye/assembly.fasta".format(folder), illumina_genomes="illumina_genomes.txt", out_dir="90-FastANI/{}".format(folder), threads=4, memory=24, folder=folder))
