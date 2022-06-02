@@ -14,7 +14,6 @@ assembler. """
 
 import os
 import sys
-import datetime
 from gwf import Workflow, AnonymousTarget
 
 gwf = Workflow(defaults={"account": "CCRP_Data"})
@@ -290,7 +289,7 @@ def plot_coverage(in_dir, out_dir, memory, folder):
 	return AnonymousTarget(inputs=inputs, outputs=outputs, options=options, spec=spec)
 
 # Annotation
-def prokka_annot(assembly, out_dir, threads, memory, dates, folder):
+def prokka_annot(assembly, out_dir, threads, memory, folder):
 	# Folder structure
 	if os.path.isdir("70-Prokka") == False: os.mkdir("70-Prokka")
 	if os.path.isdir("70-Prokka/" + folder) == False: os.mkdir("70-Prokka/" + folder)
@@ -306,7 +305,7 @@ def prokka_annot(assembly, out_dir, threads, memory, dates, folder):
 
 	# Prokka
 	conda activate Prokka
-	prokka --force --cpus {threads} --outdir {out_dir} --prefix {folder} {assembly}
+	prokka --force --cpus {threads} --outdir {out_dir} --prefix prokka_{folder} {assembly}
 	'''.format(assembly=assembly, out_dir=out_dir, threads=threads, folder=folder)
 
 	return AnonymousTarget(inputs=inputs, outputs=outputs, options=options, spec=spec)
@@ -399,18 +398,6 @@ busco_dict = {'Actinomycetales': 'actinobacteria_class_odb10', 'Flavobacteriales
 # DiamondDB
 diamond_db = "/home/agomez/CCRP_Data/AGR/Data/UniProt/BacterialDB_diamond/uniprot_bacterial"
 
-## Dates
-#-------
-
-di = datetime.date(2022,1,1)
-df = datetime.datetime.today().date()
-
-dates = []
-
-while di <= df:
-	dates.append(datetime.datetime.strftime(di,'%m%d%Y'))
-	di += datetime.timedelta(days=1)
-
 # Execution
 #----------
 
@@ -427,6 +414,9 @@ except:
 
 # Loop
 for row in f:
+
+	if row[0] == "#":
+		continue
 
 	# Divide line
 	row = row.strip().split("\t")
@@ -464,7 +454,7 @@ for row in f:
 	gwf.target_from_template("{}_60_plot_coverage".format(folder), plot_coverage(in_dir="50-Coverage/{}".format(folder), out_dir="60-Plots/{}".format(folder), memory=8, folder=folder))
 
 	# 70 Annotation
-	gwf.target_from_template("{}_70_annotation".format(folder), prokka_annot(assembly="30-Unicycler/{}/flye/assembly.fasta".format(folder), out_dir="70-Prokka/{}".format(folder), threads=4, memory=16, dates=dates, folder=folder))
+	gwf.target_from_template("{}_70_annotation".format(folder), prokka_annot(assembly="30-Unicycler/{}/flye/assembly.fasta".format(folder), out_dir="70-Prokka/{}".format(folder), threads=4, memory=16, folder=folder))
 
 	# 80 Validation
 	database = busco_dict[LjTaxa[folder]]
