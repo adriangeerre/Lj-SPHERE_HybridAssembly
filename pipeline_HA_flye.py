@@ -471,11 +471,13 @@ for row in f:
 	gwf.target_from_template("{}_60_plot_coverage".format(folder), plot_coverage(in_dir="50-Coverage/{}".format(folder), out_dir="60-Plots/{}".format(folder), memory=8, folder=folder))
 
 	# 70 Annotation
-	out_dir_yaml = "30-Unicycler/{}/flye".format(folder)
+	out_dir_yaml = "30-Unicycler/{}/flye/{}".format(folder, folder)
 	genus = LjGenus[folder]
-	pgap_files_creator(genus = genus, assembly = "30-Unicycler/{}/flye/assembly.fasta".format(folder), out_dir = out_dir_yaml)
-	if os.path.exists(path_isolate + '.submol.yml') and os.path.exists(path_isolate + '.input.yml') and genus != "NA":
-		gwf.target_from_template("{}_70_annotation".format(folder), annotation(assembly="30-Unicycler/{}/flye/assembly.fasta".format(folder), genus = genus,  out_dir="70-Annotation/{}".format(folder), threads=4, memory=16, folder=folder))
+	if not os.path.exists(out_dir_yaml + ".submol.yml") and not os.path.exists(out_dir_yaml + ".input.yml"):
+		pgap_files_creator(genus = genus, assembly = "30-Unicycler/{}/flye/assembly.fasta".format(folder), out_dir = out_dir_yaml)
+		
+	if os.path.exists(out_dir_yaml + '.submol.yml') and os.path.exists(out_dir_yaml + '.input.yml') and genus != "NA":
+		gwf.target_from_template("{}_70_annotation".format(folder), annotation(assembly="30-Unicycler/{}/flye/assembly.fasta".format(folder), input_yaml = "{}.input.yml".format(out_dir_yaml), out_dir="70-Annotation/{}".format(folder), threads=4, memory=16, folder=folder))
 
 	# 80 Validation
 	database = busco_dict[LjTaxa[folder]]
