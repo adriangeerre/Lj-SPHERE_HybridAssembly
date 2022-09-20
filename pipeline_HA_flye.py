@@ -14,6 +14,7 @@ assembler. """
 
 import os
 import sys
+import yaml
 from gwf import Workflow, AnonymousTarget
 
 gwf = Workflow(defaults={"account": "CCRP_Data"})
@@ -289,24 +290,24 @@ def plot_coverage(in_dir, out_dir, memory, folder):
 	return AnonymousTarget(inputs=inputs, outputs=outputs, options=options, spec=spec)
 
 # Annotation
-def prokka_annot(assembly, out_dir, threads, memory, folder):
+def annotation(assembly, input_yaml, out_dir, threads, memory, folder):
 	# Folder structure
-	if os.path.isdir("70-Prokka") == False: os.mkdir("70-Prokka")
-	if os.path.isdir("70-Prokka/" + folder) == False: os.mkdir("70-Prokka/" + folder)
+	if os.path.isdir("70-Annotation") == False: os.mkdir("70-Annotation")
+	if os.path.isdir("70-Annotation/" + folder) == False: os.mkdir("70-Annotation/" + folder)
 
 	# GWF
-	inputs = ["{}".format(assembly)]
-	outputs = ["{}/prokka_{}.{}".format(out_dir, folder, ext) for ext in ["err","faa","ffn","fna","fsa","gbk","gff","log","sqn","tbl","tsv","txt"]]
+	inputs = ["{}".format(assembly), "{}".format(input_yaml)]
+	outputs = ["{}/annot.{}".format(out_dir, ext) for ext in ["faa","fna","gbk","gff","sqn"]]
 	options = {'cores': '{}'.format(threads), 'memory': '{}g'.format(memory), 'queue': 'short', 'walltime': '2:00:00'}
 
 	spec='''
-	# Source conda to work with environments
-	source ~/programas/minconda3.9/etc/profile.d/conda.sh
+	# Cache and tmp folders
+	export SINGULARITY_CACHEDIR=/scratch/gpfs/$USER/SINGULARITY_CACHE
+	export SINGULARITY_TMPDIR=/tmp
 
-	# Prokka
-	conda activate Prokka
-	prokka --force --cpus {threads} --outdir {out_dir} --prefix prokka_{folder} {assembly}
-	'''.format(assembly=assembly, out_dir=out_dir, threads=threads, folder=folder)
+	# PGAP (already in path)
+	pgap.py -d -n --no-internet --ignore-all-errors --docker singularity -o {out_dir}/{folder}/annotation --memory {memory} {input_yaml}
+	'''.format(assembly=assembly, out_dir=out_dir, threads=threads, folder=folder, memory=memory, input_yaml=input_yaml)
 
 	return AnonymousTarget(inputs=inputs, outputs=outputs, options=options, spec=spec)
 
@@ -376,21 +377,37 @@ def fastani(hybrid_assembly, illumina_genomes, out_dir, threads, memory, folder)
 
 	return AnonymousTarget(inputs=inputs, outputs=outputs, options=options, spec=spec)
 
+# Functions
+#----------
+
+def pgap_files_creator(genus, assembly, out_dir):
+	# Submol
+	dct_submol = {'topology':'circular', 'location':'chromosome', 'organism':{'genus_species':'{}'.format(genus)}}
+	submol = out_dir + '.submol.yml'
+	with open(submol, 'w') as yaml_file:
+		yaml.dump(dct_submol, yaml_file)
+
+	# Input
+	dct_input = {'fasta':{'class':'File', 'location':'{}'.format(assembly)}, 'submol':{'class':'File', 'location':'{}'.format(submol)}}
+	with open(out_dir + '.input.yml', 'w') as yaml_file:
+		yaml.dump(dct_input, yaml_file)
+
 # Database
 #---------
 
 file_path = "LjSphere_taxonomy.csv"
 
 # Create dict from csv
-def create_dict(path):
+def create_dict(path, col):
 	d = {}
 	f = open(path, "r")
 	for l in f:
 		l = l.split("\t")
-		d[l[0]] = l[4]
+		d[l[0]] = l[col].strip()
 	return d
 
-LjTaxa = create_dict(file_path)
+LjTaxa = create_dict(file_path, 4)
+LjGenus = create_dict(file_path, 6)
 
 # Busco databases
 busco_dict = {'Actinomycetales': 'actinobacteria_class_odb10', 'Flavobacteriales': 'flavobacteriales_odb10', 'Bacillales': 'bacillales_odb10', 'Burkholderiales': 'burkholderiales_odb10', 'Caulobacterales': 'alphaproteobacteria_odb10', 'Rhizobiales': 'rhizobiales_odb10', 'Sphingomonadales': 'sphingomonadales_odb10', 'Pseudomonadales': 'pseudomonadales_odb10', 'Xanthomonadales': 'xanthomonadales_odb10', 'NA': 'NA'}
@@ -454,7 +471,11 @@ for row in f:
 	gwf.target_from_template("{}_60_plot_coverage".format(folder), plot_coverage(in_dir="50-Coverage/{}".format(folder), out_dir="60-Plots/{}".format(folder), memory=8, folder=folder))
 
 	# 70 Annotation
-	gwf.target_from_template("{}_70_annotation".format(folder), prokka_annot(assembly="30-Unicycler/{}/flye/assembly.fasta".format(folder), out_dir="70-Prokka/{}".format(folder), threads=4, memory=16, folder=folder))
+	out_dir_yaml = "30-Unicycler/{}/flye".format(folder)
+	genus = LjTaxa[folder]
+	pgap_files_creator(genus, assembly = "30-Unicycler/{}/flye/assembly.fasta".format(folder), out_dir = out_dir_yaml)
+	if os.path.exists(path_isolate + '.submol.yml') and os.path.exists(path_isolate + '.input.yml') and genus != "NA":
+		gwf.target_from_template("{}_70_annotation".format(folder), annotation(assembly="30-Unicycler/{}/flye/assembly.fasta".format(folder), genus = genus,  out_dir="70-Annotation/{}".format(folder), threads=4, memory=16, folder=folder))
 
 	# 80 Validation
 	database = busco_dict[LjTaxa[folder]]
