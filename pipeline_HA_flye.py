@@ -306,7 +306,7 @@ def annotation(assembly, input_yaml, out_dir, threads, memory, folder):
 	export SINGULARITY_TMPDIR=/scratch/$SLURM_JOBID
 
 	# PGAP (already in path)
-	pgap.py -d -n --no-internet --ignore-all-errors --docker singularity -o {out_dir}/{folder}/annotation --memory {memory} {input_yaml}
+	pgap.py -d -n --no-internet --ignore-all-errors --docker singularity -o {out_dir} --memory {memory} {input_yaml}
 	'''.format(input_yaml=input_yaml, out_dir=out_dir, folder=folder, memory=memory)
 
 	return AnonymousTarget(inputs=inputs, outputs=outputs, options=options, spec=spec)
@@ -477,7 +477,7 @@ for row in f:
 		pgap_files_creator(genus = genus, assembly = "30-Unicycler/{}/flye/assembly.fasta".format(folder), out_dir = out_dir_yaml)
 		
 	if os.path.exists(out_dir_yaml + '.submol.yml') and os.path.exists(out_dir_yaml + '.input.yml') and genus != "NA":
-		gwf.target_from_template("{}_70_annotation".format(folder), annotation(assembly="30-Unicycler/{}/flye/assembly.fasta".format(folder), input_yaml = "{}.input.yml".format(out_dir_yaml), out_dir="70-Annotation/{}".format(folder), threads=4, memory=16, folder=folder))
+		gwf.target_from_template("{}_70_annotation".format(folder), annotation(assembly="30-Unicycler/{}/flye/assembly.fasta".format(folder), input_yaml = "{}.input.yml".format(out_dir_yaml), out_dir="70-Annotation/{}/annotation".format(folder), threads=4, memory=16, folder=folder))
 
 	# 80 Validation
 	database = busco_dict[LjTaxa[folder]]
