@@ -472,7 +472,7 @@ for row in f:
 
 	# 70 Annotation
 	out_dir_yaml = "30-Unicycler/{}/flye".format(folder)
-	genus = LjTaxa[folder]
+	genus = LjGenus[folder]
 	pgap_files_creator(genus, assembly = "30-Unicycler/{}/flye/assembly.fasta".format(folder), out_dir = out_dir_yaml)
 	if os.path.exists(path_isolate + '.submol.yml') and os.path.exists(path_isolate + '.input.yml') and genus != "NA":
 		gwf.target_from_template("{}_70_annotation".format(folder), annotation(assembly="30-Unicycler/{}/flye/assembly.fasta".format(folder), genus = genus,  out_dir="70-Annotation/{}".format(folder), threads=4, memory=16, folder=folder))
