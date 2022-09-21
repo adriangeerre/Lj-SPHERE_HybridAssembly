@@ -140,7 +140,7 @@ def flye_assembly(nanopore_corr, out_dir, threads, memory, folder):
 	return AnonymousTarget(inputs=inputs, outputs=outputs, options=options, spec=spec)
 
 # Unicycler
-def unicycler(assembly, illumina_corr_1, illumina_corr_2, nanopore_corr, out_dir, threads, memory, folder):
+def unicycler(assembly, illumina_corr_1, illumina_corr_2, nanopore_corr, mode, out_dir, threads, memory, folder):
 	# Folder structure
 	if os.path.isdir("30-Unicycler") == False: os.mkdir("30-Unicycler")
 	if os.path.isdir("30-Unicycler/" + folder) == False: os.mkdir("30-Unicycler/" + folder)
@@ -156,8 +156,8 @@ def unicycler(assembly, illumina_corr_1, illumina_corr_2, nanopore_corr, out_dir
 
 	# Unicycler
 	conda activate Unicycler
-	unicycler -1 {illumina_corr_1} -2 {illumina_corr_2} --existing_long_read_assembly {assembly} -l {nanopore_corr} --threads {threads} --keep 2 --verbosity 2 -o {out_dir}
-	'''.format(assembly=assembly, illumina_corr_1=illumina_corr_1, illumina_corr_2=illumina_corr_2, nanopore_corr=nanopore_corr, out_dir=out_dir, threads=threads)
+	unicycler -1 {illumina_corr_1} -2 {illumina_corr_2} --existing_long_read_assembly {assembly} -l {nanopore_corr} --threads {threads} --keep 2 --verbosity 2 --mode {mode} -o {out_dir}
+	'''.format(assembly=assembly, illumina_corr_1=illumina_corr_1, illumina_corr_2=illumina_corr_2, nanopore_corr=nanopore_corr, mode=mode, out_dir=out_dir, threads=threads)
 
 	return AnonymousTarget(inputs=inputs, outputs=outputs, options=options, spec=spec)
 
@@ -298,7 +298,7 @@ def annotation(assembly, input_yaml, out_dir, threads, memory, folder):
 	# GWF
 	inputs = ["{}".format(assembly), "{}".format(input_yaml)]
 	outputs = ["{}/annot.{}".format(out_dir, ext) for ext in ["faa","fna","gbk","gff","sqn"]]
-	options = {'cores': '{}'.format(threads), 'memory': '{}g'.format(memory), 'queue': 'short', 'walltime': '2:00:00'}
+	options = {'cores': '{}'.format(threads), 'memory': '{}g'.format(memory), 'queue': 'short', 'walltime': '12:00:00'}
 
 	spec='''
 	# Cache and tmp folders
@@ -306,7 +306,7 @@ def annotation(assembly, input_yaml, out_dir, threads, memory, folder):
 	export SINGULARITY_TMPDIR=/scratch/$SLURM_JOBID
 
 	# PGAP (already in path)
-	pgap.py -d -n --no-internet --ignore-all-errors --docker singularity -o {out_dir} --memory {memory} {input_yaml}
+	python /home/agomez/programas/PGAP/pgap.py -d -n --no-internet --ignore-all-errors --docker singularity -o {out_dir} --memory {memory} {input_yaml}
 	'''.format(input_yaml=input_yaml, out_dir=out_dir, folder=folder, memory=memory)
 
 	return AnonymousTarget(inputs=inputs, outputs=outputs, options=options, spec=spec)
@@ -383,14 +383,15 @@ def fastani(hybrid_assembly, illumina_genomes, out_dir, threads, memory, folder)
 def pgap_files_creator(genus, assembly, out_dir):
 	# Submol
 	dct_submol = {'topology':'circular', 'location':'chromosome', 'organism':{'genus_species':'{}'.format(genus)}}
-	submol = out_dir + '.submol.yml'
+	submol = os.path.abspath(".") + "/" + out_dir + '.submol.yml'
 	with open(submol, 'w') as yaml_file:
-		yaml.dump(dct_submol, yaml_file)
+		yaml.dump(dct_submol, yaml_file, default_style="'")
 
 	# Input
 	dct_input = {'fasta':{'class':'File', 'location':'{}'.format(assembly)}, 'submol':{'class':'File', 'location':'{}'.format(submol)}}
-	with open(out_dir + '.input.yml', 'w') as yaml_file:
-		yaml.dump(dct_input, yaml_file)
+	input = os.path.abspath(".") + "/" + out_dir + '.input.yml'
+	with open(input, 'w') as yaml_file:
+		yaml.dump(dct_input, yaml_file, default_style="'")
 
 # Database
 #---------
@@ -455,7 +456,7 @@ for row in f:
 	gwf.target_from_template('{}_20_assembly_flye'.format(folder), flye_assembly(nanopore_corr="10-Correction/{}/Nanopore/nanopore.corrected.fasta".format(folder), out_dir="20-Assembly/{}/flye".format(folder), threads=8, memory=64, folder=folder))
 
 	# 30 Unicycler
-	gwf.target_from_template("{}_30_unicycler".format(folder), unicycler(assembly="20-Assembly/{}/flye/assembly.fasta".format(folder), illumina_corr_1="10-Correction/{}/Illumina/corrected/{}".format(folder, illumina_corr_1), illumina_corr_2="10-Correction/{}/Illumina/corrected/{}".format(folder, illumina_corr_2), nanopore_corr="10-Correction/{}/Nanopore/nanopore.corrected.fasta".format(folder), out_dir="30-Unicycler/{}/flye".format(folder), threads=8, memory=64, folder=folder))
+	gwf.target_from_template("{}_30_unicycler".format(folder), unicycler(assembly="20-Assembly/{}/flye/assembly.fasta".format(folder), illumina_corr_1="10-Correction/{}/Illumina/corrected/{}".format(folder, illumina_corr_1), illumina_corr_2="10-Correction/{}/Illumina/corrected/{}".format(folder, illumina_corr_2), nanopore_corr="10-Correction/{}/Nanopore/nanopore.corrected.fasta".format(folder), mode="conservative", out_dir="30-Unicycler/{}/flye".format(folder), threads=8, memory=64, folder=folder))
 
 	# 31 Quast
 	gwf.target_from_template("{}_31_quast".format(folder), quast(assembly="30-Unicycler/{}/flye/assembly.fasta".format(folder), out_dir="31-Quast/{}/flye".format(folder), threads=8, memory=64, folder=folder))
