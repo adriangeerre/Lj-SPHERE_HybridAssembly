@@ -382,16 +382,19 @@ def fastani(hybrid_assembly, illumina_genomes, out_dir, threads, memory, folder)
 
 def pgap_files_creator(genus, assembly, out_dir):
 	# Submol
-	dct_submol = {'topology':'circular', 'location':'chromosome', 'organism':{'genus_species':'{}'.format(genus)}}
+	dct_submol = {'topology':"'circular'", 'location':"'chromosome'", 'organism':{'genus_species':"'{}'".format(genus)}}
 	submol = os.path.abspath(".") + "/" + out_dir + '.submol.yml'
+	text = yaml.dump(dct_submol, sort_keys=False)
+	text = text.replace("'''", "'") # PGAP only works if submol has single quotes for the values but not the keys.
 	with open(submol, 'w') as yaml_file:
-		yaml.dump(dct_submol, yaml_file, default_style="'")
+		yaml_file.write(text)
 
 	# Input
+	assembly = os.path.abspath(".") + "/" + assembly
 	dct_input = {'fasta':{'class':'File', 'location':'{}'.format(assembly)}, 'submol':{'class':'File', 'location':'{}'.format(submol)}}
 	input = os.path.abspath(".") + "/" + out_dir + '.input.yml'
 	with open(input, 'w') as yaml_file:
-		yaml.dump(dct_input, yaml_file, default_style="'")
+		yaml.dump(dct_input, yaml_file)
 
 # Database
 #---------
