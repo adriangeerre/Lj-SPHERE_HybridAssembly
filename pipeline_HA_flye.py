@@ -306,7 +306,7 @@ def annotation(assembly, input_yaml, out_dir, threads, memory, folder):
 	export SINGULARITY_TMPDIR=/scratch/$SLURM_JOBID
 
 	# PGAP (already in path)
-	python /home/agomez/programas/PGAP/pgap.py -d -n --no-internet --ignore-all-errors --docker singularity -o {out_dir} --memory {memory} {input_yaml}
+	python /home/agomez/programas/PGAP/pgap.py -d -n --no-internet --ignore-all-errors --docker singularity -o {out_dir} --memory {memory} --container-path ~/programas/SingularityImages/pgap_2022-08-11.build6275.sif {input_yaml}
 	'''.format(input_yaml=input_yaml, out_dir=out_dir, folder=folder, memory=memory)
 
 	return AnonymousTarget(inputs=inputs, outputs=outputs, options=options, spec=spec)
