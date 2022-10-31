@@ -9,14 +9,14 @@
 -cing data. It is based on Benjamin Perry pipeline and uses flye as the main
 assembler. """ 
 # ---------------------------------------------------------------------------
-# Imports
+# Imports 
 # ---------------------------------------------------------------------------
 
+from html import entities
 import os
-import re
 import sys
 import yaml
-import json
+import statistics as st # Python v3.4 or above
 from gwf import Workflow, AnonymousTarget
 
 gwf = Workflow(defaults={"account": "CCRP_Data"})
@@ -398,28 +398,6 @@ def pgap_files_creator(genus, assembly, out_dir):
 	with open(input, 'w') as yaml_file:
 		yaml.dump(dct_input, yaml_file)
 
-def genbank_to_dict(gbk):
-	# Dict
-	features = {}
-	# Read file
-	with open(gbk) as z:
-		lines = [next(z).strip() for y in range(60)]
-	z.close()
-	lines = [l.replace(" ","") for l in lines if re.match(r".*::.*", l)]
-	# Extract feature count
-	lines = [l.replace("(total)","") for l in lines if re.match(r"Genes\(total\).*|CDSs\(total\).*|PseudoGenes\(total\).*|tRNAs.*|rRNAs.*", l)]
-	# Lines to dictionary
-	for l in lines:
-		l.split("::")
-		if l[0] == "rRNAs":
-			p = re.search('::.*\(', l[1]).group().replace("::","").replace("(","")
-			srnas=sum([int(i) for i in p if i != ","])
-			features[l[0]] = srnas
-		else:
-			features[l[0]] = int(l[1].replace(",",""))
-
-	return features
-
 def genbank_to_dict(gff):
 	# Dict
 	features = {}
@@ -427,18 +405,30 @@ def genbank_to_dict(gff):
 	f = open(gff, "r")
 	# Loop entries
 	tlength = 0
-	entries = {"gene": [], "CDS": [], "pseudogene": [], "rRNA": [], "tRNA": []}
-for i in f:
-	if i[0] == "#":
-		continue	
-	i = i.split("\t")
-	if i[2] == "region":
-		tlength += int(i[4])
-	else:
-		if i[2] in entries.keys():
-			entries[i[2]].append(abs(int(i[4])-int(i[3])))
-
+	entries = {"gene": [], "CDS": [], "pseudogene": [], "rRNA_5S": [], "rRNA_16S": [], "rRNA_23S": [], "tRNA": []}
+	for i in f:
+		# Avoid header info
+		if i[0] == "#":
+			continue	
+		i = i.split("\t")
+		# Obtain total length
+		if i[2] == "region":
+			tlength += int(i[4])
+		elif i[2] == "rRNA":
+			p = i[-1].strip().split(";")
+			p = [j for j in p if j[0:7] == "product"]
+			p = p[0].split("=")[1].split(" ")[0]
+			if p != "":
+				entries["rRNA_{}".format(p)].append(abs(int(i[4])-int(i[3])))
+		else:
+			# Count defined features
+			if i[2] in entries.keys():
+				entries[i[2]].append(abs(int(i[4])-int(i[3])))
+	# Include total length
+	entries["tlength"] = [tlength]
 	return entries
+
+# IMPLEMENT 5S/16S/23S (at least 1 with good length) and NO GENE OVERLAP!
 
 # Validations
 def validate_busco(bd):
@@ -472,8 +462,33 @@ def validate_checkm(cm):
 	else:
 		return "Failed"
 
-def validate_pgap(gbk):
-	d = genbank_to_dict(gbk)
+def validate_pgap(gff):
+	# Dict
+	r = {"GeneRatio": 0, "PseudoRatio": 0, "tRNA": 0, "rRNA": 0}
+	ribo = {"rRNA_5S": 0, "rRNA_16S": 0, "rRNA_23S": 0}
+	# Summary
+	d = genbank_to_dict(gff)
+	cd = {i: len(j) for i,j in d.items()} # Total genes = genes + pseudogene
+	# Pre-knowledge (E. coli based!)
+	l5S = 120
+	l16S = 1542
+	l23S = 2904
+	# Ribosomal Value (at least one and median not deviating more than 10%)
+	if cd["rRNA_5S"] >= 1 and abs(st.median(d["rRNA_5S"]) - l5S) <= l5S * 0.1: ribo["5S"] = 1
+	if cd["rRNA_16S"] >= 1 and abs(st.median(d["rRNA_16S"]) - l16S) <= l16S * 0.1: ribo["16S"] = 1
+	if cd["rRNA_23S"] >= 1 and abs(st.median(d["rRNA_23S"])) - l23S) <= l23S * 0.1: ribo["23S"] = 1
+	# Values
+	tgenes = cd["gene"] + cd["pseudogene"]
+	gene_ratio = (tgenes * 1000) / d[tlength][0]
+	if gene_ratio > 0.9: r["GeneRatio"] = 1
+	if cd["pseudogene"] / tgenes < 0.2: r["PseudoRatio"] = 1
+	if cd["tRNA"] > 20: r["tRNA"] = 1
+	if sum(list(ribo.values())) == 3: r["rRNA"] = 1
+	# Check
+	if sum(list(r.values())) == 4:
+		return "Pass"
+	else:
+		return "Failed"
 
 # Database
 #---------
