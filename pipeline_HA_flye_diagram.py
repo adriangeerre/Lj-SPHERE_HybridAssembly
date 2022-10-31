@@ -16,6 +16,7 @@ from html import entities
 import os
 import sys
 import yaml
+import json
 import statistics as st # Python v3.4 or above
 from gwf import Workflow, AnonymousTarget
 
@@ -398,6 +399,7 @@ def pgap_files_creator(genus, assembly, out_dir):
 	with open(input, 'w') as yaml_file:
 		yaml.dump(dct_input, yaml_file)
 
+# IMPLEMENT NO GENE OVERLAP! (AGAT)
 def genbank_to_dict(gff):
 	# Dict
 	features = {}
@@ -427,8 +429,6 @@ def genbank_to_dict(gff):
 	# Include total length
 	entries["tlength"] = [tlength]
 	return entries
-
-# IMPLEMENT 5S/16S/23S (at least 1 with good length) and NO GENE OVERLAP!
 
 # Validations
 def validate_busco(bd):
@@ -476,7 +476,7 @@ def validate_pgap(gff):
 	# Ribosomal Value (at least one and median not deviating more than 10%)
 	if cd["rRNA_5S"] >= 1 and abs(st.median(d["rRNA_5S"]) - l5S) <= l5S * 0.1: ribo["5S"] = 1
 	if cd["rRNA_16S"] >= 1 and abs(st.median(d["rRNA_16S"]) - l16S) <= l16S * 0.1: ribo["16S"] = 1
-	if cd["rRNA_23S"] >= 1 and abs(st.median(d["rRNA_23S"])) - l23S) <= l23S * 0.1: ribo["23S"] = 1
+	if cd["rRNA_23S"] >= 1 and abs(st.median(d["rRNA_23S"]) - l23S) <= l23S * 0.1: ribo["23S"] = 1
 	# Values
 	tgenes = cd["gene"] + cd["pseudogene"]
 	gene_ratio = (tgenes * 1000) / d[tlength][0]
@@ -616,50 +616,91 @@ for row in f:
 		# 60 Coverage Plot
 		gwf.target_from_template("{}_30_plot_coverage".format(folder), plot_coverage(in_dir="30-HybridAssembly/{}/Coverage".format(folder), out_dir="30-HybridAssembly/{}/Coverage/CovPlots".format(folder), memory=8, folder=folder))
 
-		# 70 Annotation
-		out_dir_yaml = "30-HybridAssembly/{}/unicycler/{}".format(folder, folder)
-		genus = LjGenus[folder]
-		if not os.path.exists(out_dir_yaml + ".submol.yml") and not os.path.exists(out_dir_yaml + ".input.yml"):
-			pgap_files_creator(genus = genus, assembly = "30-HybridAssembly/{}/unicycler/assembly.fasta".format(folder), out_dir = out_dir_yaml)
-			
-		if os.path.exists(out_dir_yaml + '.submol.yml') and os.path.exists(out_dir_yaml + '.input.yml') and genus != "NA":
-			gwf.target_from_template("{}_70_annotation".format(folder), annotation(assembly="30-HybridAssembly/{}/unicycler/assembly.fasta".format(folder), input_yaml = "{}.input.yml".format(out_dir_yaml), out_dir="70-Annotation/{}/annotation".format(folder), threads=1, memory=4, folder=folder))
+		# 80 Validation
+		database = busco_dict[LjTaxa[folder]]
+		if database != "NA":
+			gwf.target_from_template("{}_80_busco".format(folder), assembly_validation(assembly="30-HybridAssembly/{}/unicycler/assembly.fasta".format(folder), database=database, out_dir="80-Validation/unicycler/{}".format(folder), threads=4, memory=24, folder=folder))
 
-	# 80 Validation
-	database = busco_dict[LjTaxa[folder]]
-	if database != "NA":
-		gwf.target_from_template("{}_80_busco".format(folder), assembly_validation(assembly="30-HybridAssembly/{}/unicycler/assembly.fasta".format(folder), database=database, out_dir="80-Validation/unicycler/{}".format(folder), threads=4, memory=24, folder=folder))
-	#gwf.target_from_template("{}_80_diamond".format(folder), diamond(out_dir="80-Validation/{}/Diamond".format(folder), diamond_db="{}".format(diamond_db), threads=8, memory=32, folder=folder))
+			# Validate BUSCO
+			b = [i for i in os.listdir("80-Validation/{}/Busco").format(folder) if i[-5:] == ".json"][0]
+			try:
+				bf = open("80-Validation/{}/Busco/{}".format(folder,b))
+				bd = json.load(bf)
+				bv = validate_busco(bd)
+				bf.close()
+			except:
+				print("Error: 80-Validation/{}/Busco/{} is missing or empty.".format(folder,b))
+				continue
 
-	# 90 FastANI
-	# gwf.target_from_template("{}_90_fastani".format(folder), fastani(hybrid_assembly="30-HybridAssembly/{}/unicycler/assembly.fasta".format(folder), illumina_genomes="illumina_genomes.txt", out_dir="90-FastANI/{}".format(folder), threads=4, memory=24, folder=folder))
+			# Validate CheckM
+			c = "80-Validation/{}/CheckM/results.tsv"
+			try:
+				cv = validate_checkm(c)
+			except:
+				print("Error: {} is missing or empty.".format(c))
+				continue
+
+		# Check validation output
+		if "bv" in globals() and "cv" in globals():
+			if bv == "Pass" and cv == "Pass":
+				# 70 Annotation
+				out_dir_yaml = "30-HybridAssembly/{}/unicycler/{}".format(folder, folder)
+				genus = LjGenus[folder]
+				if not os.path.exists(out_dir_yaml + ".submol.yml") and not os.path.exists(out_dir_yaml + ".input.yml"):
+					pgap_files_creator(genus = genus, assembly = "30-HybridAssembly/{}/unicycler/assembly.fasta".format(folder), out_dir = out_dir_yaml)
+					
+				if os.path.exists(out_dir_yaml + '.submol.yml') and os.path.exists(out_dir_yaml + '.input.yml') and genus != "NA":
+					gwf.target_from_template("{}_70_annotation".format(folder), annotation(assembly="30-HybridAssembly/{}/unicycler/assembly.fasta".format(folder), input_yaml = "{}.input.yml".format(out_dir_yaml), out_dir="70-Annotation/{}/annotation".format(folder), threads=1, memory=4, folder=folder))
+
+				# Check annotation output
+				a = "70-Annotation/{}/annotation/annot.gff"
+				try:
+					av = validate_pgap(a)
+					if av == "Pass":
+						# Move assembly to Complete Genome
+						continue
+				except:
+					print("Error: {} is missing or empty.".format(c))
+					continue
+
+		elif bv == "Failed" and cv == "Failed":
+			# New 16S identification! (Here is where SyFi could be used!)
+			#	1. Extract 16S sequences
+			#	2. Remove duplicates
+			#	3. Blast online
+			#	4. Compare pre and new taxonomy (update pre to new)
+			#	4.1. If equal: Stop
+			#	4.2. If different: Re-run Busco and Annotation
+			continue
+
+	
 
 elif comp == "Below":
 	# 80 Validation
 	database = busco_dict[LjTaxa[folder]]
 	if database != "NA":
-		gwf.target_from_template("{}_80_busco".format(folder), assembly_validation(assembly="20-Assembly/{}/flye/assembly.fasta".format(folder), database=database, out_dir="80-Validation/flye/{}".format(folder), threads=4, memory=24, folder=folder))
+		gwf.target_from_template("{}_80_busco".format(folder), assembly_validation(assembly="20-Assembly/{}/flye/assembly.fasta".format(folder), database=database, out_dir="80.2-Validation/flye/{}".format(folder), threads=4, memory=24, folder=folder))
 
 		# Validate BUSCO
-		b = [i for i in os.listdir("80-Validation/{}/Busco").format(folder) if i[-5:] == ".json"][0]
+		b = [i for i in os.listdir("80.2-Validation/{}/Busco").format(folder) if i[-5:] == ".json"][0]
 		try:
-			bf = open("80-Validation/{}/Busco/{}".format(folder,b))
+			bf = open("80.2-Validation/{}/Busco/{}".format(folder,b))
 			bd = json.load(bf)
 			bv = validate_busco(bd)
 			bf.close()
 		except:
-			print("Error: 80-Validation/{}/Busco/{} is missing or empty.".format(folder,b))
+			print("Error: 80.2-Validation/{}/Busco/{} is missing or empty.".format(folder,b))
 			continue
 
 		# Validate CheckM
-		c = "80-Validation/{}/CheckM/results.tsv"
+		c = "80.2-Validation/{}/CheckM/results.tsv"
 		try:
 			cv = validate_checkm(c)
 		except:
 			print("Error: {} is missing or empty.".format(c))
 			continue
 
-	# 70 Annotation
+	# Check validation output
 	if "bv" in globals() and "cv" in globals():
 		if bv == "Pass" and cv == "Pass":
 			# 70 Annotation
@@ -671,11 +712,21 @@ elif comp == "Below":
 		if os.path.exists(out_dir_yaml + '.submol.yml') and os.path.exists(out_dir_yaml + '.input.yml') and genus != "NA":
 			gwf.target_from_template("{}_70.2_annotation".format(folder), annotation(assembly="20-Assembly/{}/flye/assembly.fasta".format(folder), input_yaml = "{}.input.yml".format(out_dir_yaml), out_dir="70.2-Annotation/{}/annotation".format(folder), threads=1, memory=4, folder=folder))
 
+		# Check annotation output
+		a = "70.2-Annotation/{}/annotation/annot.gff"
+		try:
+			av = validate_pgap(a)
+			if av == "Pass":
+				# Move assembly to Improved Genome
+				continue
+		except:
+			print("Error: {} is missing or empty.".format(c))
+			continue
 		elif bv == "Failed" and cv == "Failed":
 			continue
 
 # SummaryTable
-gwf.target('SummaryTable', inputs=[file], outputs=['SummaryTable.tsv']) << """
+gwf.target('SummaryTableCompleteGenomes', inputs=[file], outputs=['SummaryTableCompleteGenomes.tsv']) << """
 echo -n "Hello " > greeting.txt
 cat name.txt >> greeting.txt
 """
