@@ -13,6 +13,7 @@ assembler. """
 # ---------------------------------------------------------------------------
 
 import os
+import re
 import sys
 import yaml
 import json
@@ -397,7 +398,49 @@ def pgap_files_creator(genus, assembly, out_dir):
 	with open(input, 'w') as yaml_file:
 		yaml.dump(dct_input, yaml_file)
 
+def genbank_to_dict(gbk):
+	# Dict
+	features = {}
+	# Read file
+	with open(gbk) as z:
+		lines = [next(z).strip() for y in range(60)]
+	z.close()
+	lines = [l.replace(" ","") for l in lines if re.match(r".*::.*", l)]
+	# Extract feature count
+	lines = [l.replace("(total)","") for l in lines if re.match(r"Genes\(total\).*|CDSs\(total\).*|PseudoGenes\(total\).*|tRNAs.*|rRNAs.*", l)]
+	# Lines to dictionary
+	for l in lines:
+		l.split("::")
+		if l[0] == "rRNAs":
+			p = re.search('::.*\(', l[1]).group().replace("::","").replace("(","")
+			srnas=sum([int(i) for i in p if i != ","])
+			features[l[0]] = srnas
+		else:
+			features[l[0]] = int(l[1].replace(",",""))
 
+	return features
+
+def genbank_to_dict(gff):
+	# Dict
+	features = {}
+	# Read file
+	f = open(gff, "r")
+	# Loop entries
+	tlength = 0
+	entries = {"gene": [], "CDS": [], "pseudogene": [], "rRNA": [], "tRNA": []}
+for i in f:
+	if i[0] == "#":
+		continue	
+	i = i.split("\t")
+	if i[2] == "region":
+		tlength += int(i[4])
+	else:
+		if i[2] in entries.keys():
+			entries[i[2]].append(abs(int(i[4])-int(i[3])))
+
+	return entries
+
+# Validations
 def validate_busco(bd):
 	# Dict
 	r = {"c": 0, "s": 0, "d": 0, "f": 0, "m": 0}
@@ -412,6 +455,25 @@ def validate_busco(bd):
 		return "Pass"
 	else:
 		return "Failed"
+
+def validate_checkm(cm):
+	# Dict
+	r = {"Comp": 0, "Cont": 0}
+	# Read file
+	f = open(cm, "r")
+	l = f.readlines()[1].strip().split()
+	f.close()
+	# Values
+	if l[-3] > 90: r["Comp"] = 1
+	if l[-3] < 5: r["Comp"] = 1
+	# Check
+	if sum(list(r.values())) == 2:
+		return "Pass"
+	else:
+		return "Failed"
+
+def validate_pgap(gbk):
+	d = genbank_to_dict(gbk)
 
 # Database
 #---------
@@ -563,9 +625,10 @@ elif comp == "Below":
 	if database != "NA":
 		gwf.target_from_template("{}_80_busco".format(folder), assembly_validation(assembly="20-Assembly/{}/flye/assembly.fasta".format(folder), database=database, out_dir="80-Validation/flye/{}".format(folder), threads=4, memory=24, folder=folder))
 
+		# Validate BUSCO
 		b = [i for i in os.listdir("80-Validation/{}/Busco").format(folder) if i[-5:] == ".json"][0]
 		try:
-			bf = open("80-Validation/{}/Busco/{}").format(folder,b))
+			bf = open("80-Validation/{}/Busco/{}".format(folder,b))
 			bd = json.load(bf)
 			bv = validate_busco(bd)
 			bf.close()
@@ -573,11 +636,27 @@ elif comp == "Below":
 			print("Error: 80-Validation/{}/Busco/{} is missing or empty.".format(folder,b))
 			continue
 
-	# 70 Annotation
-	if "bv" in globals():
-		if bv == "Pass":
+		# Validate CheckM
+		c = "80-Validation/{}/CheckM/results.tsv"
+		try:
+			cv = validate_checkm(c)
+		except:
+			print("Error: {} is missing or empty.".format(c))
 			continue
-		elif bv == "Failed":
+
+	# 70 Annotation
+	if "bv" in globals() and "cv" in globals():
+		if bv == "Pass" and cv == "Pass":
+			# 70 Annotation
+			out_dir_yaml = "20-Assembly/{}/flye/{}".format(folder, folder)
+			genus = LjGenus[folder]
+			if not os.path.exists(out_dir_yaml + ".submol.yml") and not os.path.exists(out_dir_yaml + ".input.yml"):
+				pgap_files_creator(genus = genus, assembly = "20-Assembly/{}/flye/assembly.fasta".format(folder), out_dir = out_dir_yaml)
+			
+		if os.path.exists(out_dir_yaml + '.submol.yml') and os.path.exists(out_dir_yaml + '.input.yml') and genus != "NA":
+			gwf.target_from_template("{}_70.2_annotation".format(folder), annotation(assembly="20-Assembly/{}/flye/assembly.fasta".format(folder), input_yaml = "{}.input.yml".format(out_dir_yaml), out_dir="70.2-Annotation/{}/annotation".format(folder), threads=1, memory=4, folder=folder))
+
+		elif bv == "Failed" and cv == "Failed":
 			continue
 
 # SummaryTable
