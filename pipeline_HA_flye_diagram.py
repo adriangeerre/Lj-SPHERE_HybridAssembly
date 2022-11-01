@@ -12,6 +12,7 @@ assembler. """
 # Imports 
 # ---------------------------------------------------------------------------
 
+from genericpath import isdir
 from html import entities
 import os
 import sys
@@ -22,15 +23,28 @@ from gwf import Workflow, AnonymousTarget
 
 gwf = Workflow(defaults={"account": "CCRP_Data"})
 
+
+# Color Scheme
+#-------------
+
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKCYAN = '\033[96m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
 # Functions
 #----------
 
 # Quality Control
 def qc_illumina(illumina_1, illumina_2, out_dir, threads, memory, folder):
 	# Folder structure
-	if os.path.isdir("01-QC") == False: os.mkdir("01-QC")
-	if os.path.isdir("01-QC/" + folder) == False: os.mkdir("01-QC/" + folder)
-	if os.path.isdir("01-QC/" + folder + "/Illumina") == False: os.mkdir("01-QC/" + folder + "/Illumina")
+	if os.path.isdir("01-QC/" + folder + "/Illumina") == False: os.makedirs("01-QC/" + folder + "/Illumina")
 
 	# Names
 	fqc_illumina_1 = illumina_1.split("/")[-1].split(".")[0] + "_fastqc"
@@ -54,8 +68,7 @@ def qc_illumina(illumina_1, illumina_2, out_dir, threads, memory, folder):
 
 def qc_nanopore(nanopore, out_dir, threads, memory, folder):
 	# Folder structure
-	if os.path.isdir("01-QC") == False: os.mkdir("01-QC")
-	if os.path.isdir("01-QC/" + folder) == False: os.mkdir("01-QC/" + folder)
+	if os.path.isdir("01-QC/" + folder) == False: os.makedirs("01-QC/" + folder)
 
 	# GWF
 	inputs = ["{}".format(nanopore)]
@@ -76,8 +89,7 @@ def qc_nanopore(nanopore, out_dir, threads, memory, folder):
 # Correction
 def correct_illumina(illumina_1, illumina_2, illumina_corr_1, illumina_corr_2, out_dir, threads, memory, folder):
 	# Folder structure
-	if os.path.isdir("10-Correction") == False: os.mkdir("10-Correction")
-	if os.path.isdir("10-Correction/" + folder) == False: os.mkdir("10-Correction/" + folder)
+	if os.path.isdir("10-Correction/" + folder) == False: os.makedirs("10-Correction/" + folder)
 
 	# GWF
 	inputs = ["{}".format(illumina_1), "{}".format(illumina_2)]
@@ -98,9 +110,7 @@ def correct_illumina(illumina_1, illumina_2, illumina_corr_1, illumina_corr_2, o
 
 def correct_nanopore(nanopore, illumina_corr, out_dir, threads, memory, folder):
 	# Folder structure
-	if os.path.isdir("10-Correction") == False: os.mkdir("10-Correction")
-	if os.path.isdir("10-Correction/" + folder) == False: os.mkdir("10-Correction/" + folder)
-	if os.path.isdir("10-Correction/" + folder + "/Nanopore") == False: os.mkdir("10-Correction/" + folder + "/Nanopore")
+	if os.path.isdir("10-Correction/" + folder + "/Nanopore") == False: os.makedirs("10-Correction/" + folder + "/Nanopore")
 
 	# GWF
 	inputs = ["{}".format(nanopore), "{}".format(illumina_corr)]
@@ -123,8 +133,7 @@ def correct_nanopore(nanopore, illumina_corr, out_dir, threads, memory, folder):
 # Assembler
 def flye_assembly(nanopore_corr, out_dir, threads, memory, folder):
 	# Folder structure
-	if os.path.isdir("20-Assembly") == False: os.mkdir("20-Assembly")
-	if os.path.isdir("20-Assembly/" + folder) == False: os.mkdir("20-Assembly/" + folder)
+	if os.path.isdir("20-Assembly/" + folder) == False: os.makedirs("20-Assembly/" + folder)
 
 	# GWF
 	inputs = ["{}".format(nanopore_corr)]
@@ -143,10 +152,9 @@ def flye_assembly(nanopore_corr, out_dir, threads, memory, folder):
 	return AnonymousTarget(inputs=inputs, outputs=outputs, options=options, spec=spec)
 
 # Unicycler
-def unicycler(assembly, illumina_corr_1, illumina_corr_2, nanopore_corr out_dir, threads, memory, folder):
+def unicycler(assembly, illumina_corr_1, illumina_corr_2, nanopore_corr, out_dir, threads, memory, folder):
 	# Folder structure
-	if os.path.isdir("30-HybridAssembly") == False: os.mkdir("30-HybridAssembly")
-	if os.path.isdir("30-HybridAssembly/" + folder) == False: os.mkdir("30-HybridAssembly/" + folder)
+	if os.path.isdir("30-HybridAssembly/" + folder) == False: os.makedirs("30-HybridAssembly/" + folder)
 
 	# GWF
 	inputs = ["{}".format(assembly), "{}".format(illumina_corr_1), "{}".format(illumina_corr_2), "{}".format(nanopore_corr)]
@@ -165,10 +173,9 @@ def unicycler(assembly, illumina_corr_1, illumina_corr_2, nanopore_corr out_dir,
 	return AnonymousTarget(inputs=inputs, outputs=outputs, options=options, spec=spec)
 
 # Quast
-def quast(assembly, out_dir, threads, memory, folder):
+def quast(assembly, out_dir, threads, memory):
 	# Folder structure
-	if os.path.isdir("31-Quast") == False: os.mkdir("31-Quast")
-	if os.path.isdir("31-Quast/" + folder) == False: os.mkdir("31-Quast/" + folder)
+	if os.path.isdir(out_dir) == False: os.makedirs(out_dir)
 
 	# GWF
 	inputs = ["{}".format(assembly)]
@@ -187,10 +194,9 @@ def quast(assembly, out_dir, threads, memory, folder):
 	return AnonymousTarget(inputs=inputs, outputs=outputs, options=options, spec=spec)
 
 # Alignment
-def align_illumina(assembly, illumina_corr_1, illumina_corr_2, out_dir, threads, memory, folder):
+def align_illumina(assembly, illumina_corr_1, illumina_corr_2, out_dir, threads, memory):
 	# Folder structure
-	if os.path.isdir("40-Align") == False: os.mkdir("40-Align")
-	if os.path.isdir("40-Align/" + folder) == False: os.mkdir("40-Align/" + folder)
+	if os.path.isdir(out_dir) == False: os.makedirs(out_dir)
 
 	# GWF
 	inputs = ["{}".format(illumina_corr_1), "{}".format(illumina_corr_2), "{}".format(assembly)]
@@ -215,10 +221,9 @@ def align_illumina(assembly, illumina_corr_1, illumina_corr_2, out_dir, threads,
 
 	return AnonymousTarget(inputs=inputs, outputs=outputs, options=options, spec=spec)
 
-def align_nanopore(assembly, nanopore_corr, out_dir, threads, memory, folder):
+def align_nanopore(assembly, nanopore_corr, out_dir, threads, memory):
 	# Folder structure
-	if os.path.isdir("40-Align") == False: os.mkdir("40-Align")
-	if os.path.isdir("40-Align/" + folder) == False: os.mkdir("40-Align/" + folder)
+	if os.path.isdir(out_dir) == False: os.makedirs(out_dir)
 
 	# GWF
 	inputs = ["{}".format(nanopore_corr), "{}".format(assembly)]
@@ -242,10 +247,9 @@ def align_nanopore(assembly, nanopore_corr, out_dir, threads, memory, folder):
 	return AnonymousTarget(inputs=inputs, outputs=outputs, options=options, spec=spec)
 
 # Coverage
-def coverage(in_dir, out_dir, memory, folder):
+def coverage(in_dir, out_dir, memory):
 	# Folder structure
-	if os.path.isdir("50-Coverage") == False: os.mkdir("50-Coverage")
-	if os.path.isdir("50-Coverage/" + folder) == False: os.mkdir("50-Coverage/" + folder)
+	if os.path.isdir(out_dir) == False: os.makedirs(out_dir)
 
 	# GWF
 	inputs = ["{}/Illumina.sort.bam".format(in_dir), "{}/Nanopore.sort.bam".format(in_dir)]
@@ -267,8 +271,7 @@ def coverage(in_dir, out_dir, memory, folder):
 # Plot Coverage
 def plot_coverage(in_dir, out_dir, memory, folder):
 	# Folder structure
-	if os.path.isdir("60-Plots") == False: os.mkdir("60-Plots")
-	if os.path.isdir("60-Plots/" + folder) == False: os.mkdir("60-Plots/" + folder)
+	if os.path.isdir(out_dir) == False: os.makedirs(out_dir)
 
 	# Number of contigs
 	if os.path.exists("30-HybridAssembly/{}/unicycler/assembly.fasta".format(folder)):
@@ -295,8 +298,7 @@ def plot_coverage(in_dir, out_dir, memory, folder):
 # Annotation
 def annotation(assembly, input_yaml, out_dir, threads, memory, folder):
 	# Folder structure
-	if os.path.isdir("70-Annotation") == False: os.mkdir("70-Annotation")
-	if os.path.isdir("70-Annotation/" + folder) == False: os.mkdir("70-Annotation/" + folder)
+	if os.path.isdir(out_dir) == False: os.makedirs(out_dir)
 
 	# GWF
 	inputs = ["{}".format(assembly), "{}".format(input_yaml)]
@@ -314,10 +316,9 @@ def annotation(assembly, input_yaml, out_dir, threads, memory, folder):
 
 	return AnonymousTarget(inputs=inputs, outputs=outputs, options=options, spec=spec)
 
-def assembly_validation(assembly, database, out_dir, diamond_db, threads, memory, folder):
+def assembly_validation(assembly, database, out_dir, threads, memory):
 	# Folder structure
-	if os.path.isdir("80-Validation") == False: os.mkdir("80-Validation")
-	if os.path.isdir("80-Validation/" + folder) == False: os.mkdir("80-Validation/" + folder)
+	if os.path.isdir(out_dir) == False: os.makedirs(out_dir)
 
 	# GWF
 	inputs = ["{}".format(assembly)]
@@ -339,31 +340,31 @@ def assembly_validation(assembly, database, out_dir, diamond_db, threads, memory
 
 	return AnonymousTarget(inputs=inputs, outputs=outputs, options=options, spec=spec)
 
-def diamond(out_dir, diamond_db, threads, memory, folder):
-	# Folder structure
-	if os.path.isdir("80-Validation") == False: os.mkdir("80-Validation")
-	if os.path.isdir("80-Validation/" + folder) == False: os.mkdir("80-Validation/" + folder)
-	if os.path.isdir("80-Validation/" + folder + "/Diamond") == False: os.mkdir("80-Validation/" + folder + "/Diamond")
+# def diamond(out_dir, diamond_db, threads, memory, folder):
+# 	# Folder structure
+# 	if os.path.isdir("80-Validation") == False: os.mkdir("80-Validation")
+# 	if os.path.isdir("80-Validation/" + folder) == False: os.mkdir("80-Validation/" + folder)
+# 	if os.path.isdir("80-Validation/" + folder + "/Diamond") == False: os.mkdir("80-Validation/" + folder + "/Diamond")
 
-	# GWF
-	inputs = ["70-Prokka/{}/prokka_{}.faa".format(folder, folder)]
-	outputs = ["{}/{}.diamond.tsv".format(out_dir, folder)]
-	options = {'cores': '{}'.format(threads), 'memory': '{}g'.format(memory), 'queue': 'normal', 'walltime': '6:00:00'}
-	spec='''
-	# Source conda to work with environments
-	source ~/programas/minconda3.9/etc/profile.d/conda.sh
+# 	# GWF
+# 	inputs = ["70-Prokka/{}/prokka_{}.faa".format(folder, folder)]
+# 	outputs = ["{}/{}.diamond.tsv".format(out_dir, folder)]
+# 	options = {'cores': '{}'.format(threads), 'memory': '{}g'.format(memory), 'queue': 'normal', 'walltime': '6:00:00'}
+# 	spec='''
+# 	# Source conda to work with environments
+# 	source ~/programas/minconda3.9/etc/profile.d/conda.sh
 
-	# Diamond (db pre-computed)
-	conda activate Diamond
-	diamond blastp --query 70-Prokka/{folder}/prokka_{folder}.faa --db {diamond_db} --outfmt 6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore slen qlen sseq qseq --threads {threads} --out {out_dir}/{folder}.diamond.tsv --un {out_dir}/{folder}.diamond.unalign.fasta --unfmt fasta --fast --tmpdir /scratch/$SLURM_JOBID/ --parallel-tmpdir /scratch/$SLURM_JOBID/
-	'''.format(out_dir=out_dir, diamond_db=diamond_db, folder=folder, threads=threads)
+# 	# Diamond (db pre-computed)
+# 	conda activate Diamond
+# 	diamond blastp --query 70-Prokka/{folder}/prokka_{folder}.faa --db {diamond_db} --outfmt 6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore slen qlen sseq qseq --threads {threads} --out {out_dir}/{folder}.diamond.tsv --un {out_dir}/{folder}.diamond.unalign.fasta --unfmt fasta --fast --tmpdir /scratch/$SLURM_JOBID/ --parallel-tmpdir /scratch/$SLURM_JOBID/
+# 	'''.format(out_dir=out_dir, diamond_db=diamond_db, folder=folder, threads=threads)
 
-	return AnonymousTarget(inputs=inputs, outputs=outputs, options=options, spec=spec)
+# 	return AnonymousTarget(inputs=inputs, outputs=outputs, options=options, spec=spec)
 
 def fastani(hybrid_assembly, illumina_genomes, out_dir, threads, memory, folder):
 	# Folder structure
-	if os.path.isdir("90-FastANI") == False: os.mkdir("90-FastANI")
-	if os.path.isdir("90-FastANI/" + folder) == False: os.mkdir("90-FastANI/" + folder)
+	if os.path.isdir("90-FastANI") == False: os.makedirs("90-FastANI")
+	if os.path.isdir("90-FastANI/" + folder) == False: os.makedirs("90-FastANI/" + folder)
 
 	# GWF
 	inputs = ["{}".format(hybrid_assembly), "{}".format(illumina_genomes)]
@@ -511,7 +512,7 @@ LjGenus = create_dict(file_path, 6)
 busco_dict = {'Actinomycetales': 'actinobacteria_class_odb10', 'Flavobacteriales': 'flavobacteriales_odb10', 'Bacillales': 'bacillales_odb10', 'Burkholderiales': 'burkholderiales_odb10', 'Caulobacterales': 'alphaproteobacteria_odb10', 'Rhizobiales': 'rhizobiales_odb10', 'Sphingomonadales': 'sphingomonadales_odb10', 'Pseudomonadales': 'pseudomonadales_odb10', 'Xanthomonadales': 'xanthomonadales_odb10', 'NA': 'NA'}
 
 # DiamondDB
-diamond_db = "/home/agomez/CCRP_Data/AGR/Data/UniProt/BacterialDB_diamond/uniprot_bacterial"
+# diamond_db = "/home/agomez/CCRP_Data/AGR/Data/UniProt/BacterialDB_diamond/uniprot_bacterial"
 
 # Execution
 #----------
@@ -524,7 +525,7 @@ file = "strains.tsv"
 try:
 	f = open(file, 'r')
 except:
-	print("Error: summary file with genomes not found.")
+	print(f"{bcolors.FAIL}Error: {file} summary file not found.{bcolors.ENDC}")
 	sys.exit()
 
 # First Loop
@@ -553,18 +554,16 @@ for row in f:
 	gwf.target_from_template('{}_20_assembly_flye'.format(folder), flye_assembly(nanopore_corr="10-Correction/{}/Nanopore/nanopore.corrected.fasta".format(folder), out_dir="20-Assembly/{}/flye".format(folder), threads=8, memory=64, folder=folder))
 
 	# 30 Unicycler
-	gwf.target_from_template("{}_30_unicycler".format(folder), unicycler(assembly="20-Assembly/{}/flye/assembly.fasta".format(folder), illumina_corr_1="10-Correction/{}/Illumina/corrected/{}".format(folder, illumina_corr_1), illumina_corr_2="10-Correction/{}/Illumina/corrected/{}".format(folder, illumina_corr_2), nanopore_corr="10-Correction/{}/Nanopore/nanopore.corrected.fasta".format(folder) out_dir="30-HybridAssembly/{}/unicycler".format(folder), threads=8, memory=64, folder=folder))
-
-	if os.path.exists("20-Assembly/{}/flye/assembly.fasta".format(folder):
-		# 31 Quast
-		gwf.target_from_template("{}_31_quast".format(folder), quast(assembly="20-Assembly/{}/flye/assembly.fasta".format(folder), out_dir="31-Quast/{}/flye".format(folder), threads=4, memory=32, folder=folder))
-	
-	if os.path.exists("30-HybridAssembly/{}/unicycler/assembly.fasta".format(folder)):
-		# 31 Quast
-		gwf.target_from_template("{}_31_quast".format(folder), quast(assembly="30-HybridAssembly/{}/unicycler/assembly.fasta".format(folder), out_dir="31-Quast/{}/flye".format(folder), threads=4, memory=32, folder=folder))
+	gwf.target_from_template("{}_30_hybrid_assembly_unicycler".format(folder), unicycler(assembly="20-Assembly/{}/flye/assembly.fasta".format(folder), illumina_corr_1="10-Correction/{}/Illumina/corrected/{}".format(folder, illumina_corr_1), illumina_corr_2="10-Correction/{}/Illumina/corrected/{}".format(folder, illumina_corr_2), nanopore_corr="10-Correction/{}/Nanopore/nanopore.corrected.fasta".format(folder), out_dir="30-HybridAssembly/{}/unicycler".format(folder), threads=8, memory=64, folder=folder))
 
 # ContigTable
 gwf.target('ContigTable', inputs=[file], outputs=['ContigTable.tsv']) << """
+# Remove file if existed
+if [ -f ContigTable.tsv ]; then
+		rm -rf ContigTable.tsv
+	fi
+
+# Create ContigTable
 for iso in $(cat strains.tsv | cut -f 4); do
 	# Get number of contigs
 	cor1=$(cat strains.tsv | grep -w ${iso} | cut -f 2)
@@ -580,7 +579,7 @@ for iso in $(cat strains.tsv | cut -f 4); do
 		comp="Equal"
 	fi
 	# Create file
-	printf "${iso}\t${cor1}\t${cor2}\t${drcnt}\t${hacnt}\t${comp}\n" > ContigTable.tsv
+	printf "${iso}\t${cor1}\t${cor2}\t${drcnt}\t${hacnt}\t${comp}\n" >> ContigTable.tsv
 done
 """
 
@@ -588,8 +587,8 @@ done
 try:
 	f = open("ContigTable.tsv", 'r')
 except:
-	print("STOP: summary file with assembly contigs not found.")
-	sys.exit()
+	print(f"{bcolors.WARNING}WARNING: summary file with assembly contigs not found, run \"ContigTable\" after the hybrid assemblies.{bcolors.ENDC}\n")
+	#sys.exit()
 
 for row in f:
 
@@ -601,129 +600,148 @@ for row in f:
 
 	# Variables
 	folder = row[0]
-	comp = row[6].strip()
+	comp = row[5].strip()
 	illumina_corr_1 = row[1].split("/")[-1].replace(".gz","") + ".00.0_0.cor.fastq.gz"
 	illumina_corr_2 = row[2].split("/")[-1].replace(".gz","") + ".00.0_0.cor.fastq.gz"
 
 	if comp == "Equal":
-		# 40 Alignment
-		gwf.target_from_template("{}_30_align_illumina".format(folder), align_illumina(assembly="30-HybridAssembly/{}/unicycler/assembly.fasta".format(folder), illumina_corr_1="10-Correction/{}/Illumina/corrected/{}".format(folder, illumina_corr_1), illumina_corr_2="10-Correction/{}/Illumina/corrected/{}".format(folder, illumina_corr_2), out_dir="30-HybridAssembly/{}/Align".format(folder), threads=4, memory=16, folder=folder))
-		gwf.target_from_template("{}_40_align_nanopore".format(folder), align_nanopore(assembly="30-HybridAssembly/{}/unicycler/assembly.fasta".format(folder), nanopore_corr="10-Correction/{}/Nanopore/nanopore.corrected.fasta".format(folder), out_dir="30-HybridAssembly/{}/Align".format(folder), threads=4, memory=16, folder=folder))
+		# 30 Quast
+		gwf.target_from_template("{}_30_quast_hybridassembly".format(folder), quast(assembly="30-HybridAssembly/{}/unicycler/assembly.fasta".format(folder), out_dir="30-HybridAssembly/{}/Quast".format(folder), threads=4, memory=32))
 
-		# 50 Coverage
-		gwf.target_from_template("{}_30_coverage".format(folder), coverage(in_dir="30-HybridAssembly/{}/Align".format(folder), out_dir="30-HybridAssembly/{}/Coverage".format(folder), memory=8, folder=folder))
+		# 30 Alignment
+		gwf.target_from_template("{}_30_align_illumina".format(folder), align_illumina(assembly="30-HybridAssembly/{}/unicycler/assembly.fasta".format(folder), illumina_corr_1="10-Correction/{}/Illumina/corrected/{}".format(folder, illumina_corr_1), illumina_corr_2="10-Correction/{}/Illumina/corrected/{}".format(folder, illumina_corr_2), out_dir="30-HybridAssembly/{}/Align".format(folder), threads=4, memory=16))
+		gwf.target_from_template("{}_30_align_nanopore".format(folder), align_nanopore(assembly="30-HybridAssembly/{}/unicycler/assembly.fasta".format(folder), nanopore_corr="10-Correction/{}/Nanopore/nanopore.corrected.fasta".format(folder), out_dir="30-HybridAssembly/{}/Align".format(folder), threads=4, memory=16))
 
-		# 60 Coverage Plot
+		# 30 Coverage
+		gwf.target_from_template("{}_30_coverage".format(folder), coverage(in_dir="30-HybridAssembly/{}/Align".format(folder), out_dir="30-HybridAssembly/{}/Coverage".format(folder), memory=8))
+
+		# 30 Coverage Plot
 		gwf.target_from_template("{}_30_plot_coverage".format(folder), plot_coverage(in_dir="30-HybridAssembly/{}/Coverage".format(folder), out_dir="30-HybridAssembly/{}/Coverage/CovPlots".format(folder), memory=8, folder=folder))
 
-		# 80 Validation
+		# 40 Validation
 		database = busco_dict[LjTaxa[folder]]
 		if database != "NA":
-			gwf.target_from_template("{}_80_busco".format(folder), assembly_validation(assembly="30-HybridAssembly/{}/unicycler/assembly.fasta".format(folder), database=database, out_dir="80-Validation/unicycler/{}".format(folder), threads=4, memory=24, folder=folder))
+			gwf.target_from_template("{}_40_validation_hybridassembly".format(folder), assembly_validation(assembly="30-HybridAssembly/{}/unicycler/assembly.fasta".format(folder), database=database, out_dir="40-Validation/{}/unicycler/".format(folder), threads=4, memory=24))
 
 			# Validate BUSCO
-			b = [i for i in os.listdir("80-Validation/{}/Busco").format(folder) if i[-5:] == ".json"][0]
 			try:
-				bf = open("80-Validation/{}/Busco/{}".format(folder,b))
+				b = [i for i in os.listdir("40-Validation/{}/unicycler/Busco").format(folder) if i[-5:] == ".json"][0]
+				bf = open("40-Validation/{}/unicycler/Busco/{}".format(folder,b))
 				bd = json.load(bf)
 				bv = validate_busco(bd)
 				bf.close()
 			except:
-				print("Error: 80-Validation/{}/Busco/{} is missing or empty.".format(folder,b))
-				continue
+				if os.path.isdir("40-Validation/{}/unicycler/Busco".format(folder)):
+					print(f"{bcolors.FAIL}Error: 40-Validation/{folder}/unicycler/Busco summary file is missing or empty.{bcolors.ENDC}\n")
+					continue
 
 			# Validate CheckM
-			c = "80-Validation/{}/CheckM/results.tsv"
+			c = "40-Validation/{}/unicycler/CheckM/results.tsv"
 			try:
 				cv = validate_checkm(c)
 			except:
-				print("Error: {} is missing or empty.".format(c))
-				continue
+				if os.path.isdir("40-Validation/{}/unicycler/CheckM".format(folder)):
+					print(f"{bcolors.FAIL}Error: {c} is missing or empty.{bcolors.ENDC}\n")
+					continue
 
 		# Check validation output
 		if "bv" in globals() and "cv" in globals():
 			if bv == "Pass" and cv == "Pass":
-				# 70 Annotation
+				# 50 Annotation
 				out_dir_yaml = "30-HybridAssembly/{}/unicycler/{}".format(folder, folder)
 				genus = LjGenus[folder]
 				if not os.path.exists(out_dir_yaml + ".submol.yml") and not os.path.exists(out_dir_yaml + ".input.yml"):
 					pgap_files_creator(genus = genus, assembly = "30-HybridAssembly/{}/unicycler/assembly.fasta".format(folder), out_dir = out_dir_yaml)
 					
 				if os.path.exists(out_dir_yaml + '.submol.yml') and os.path.exists(out_dir_yaml + '.input.yml') and genus != "NA":
-					gwf.target_from_template("{}_70_annotation".format(folder), annotation(assembly="30-HybridAssembly/{}/unicycler/assembly.fasta".format(folder), input_yaml = "{}.input.yml".format(out_dir_yaml), out_dir="70-Annotation/{}/annotation".format(folder), threads=1, memory=4, folder=folder))
+					gwf.target_from_template("{}_50_annotation_hybridassembly".format(folder), annotation(assembly="30-HybridAssembly/{}/unicycler/assembly.fasta".format(folder), input_yaml = "{}.input.yml".format(out_dir_yaml), out_dir="50-Annotation/{}/annotation".format(folder), threads=1, memory=4))
 
 				# Check annotation output
-				a = "70-Annotation/{}/annotation/annot.gff"
+				a = "50-Annotation/{}/annotation/annot.gff"
 				try:
 					av = validate_pgap(a)
 					if av == "Pass":
 						# Move assembly to Complete Genome
 						continue
 				except:
-					print("Error: {} is missing or empty.".format(c))
+					print(f"{bcolors.FAIL}Error: {c} is missing or empty.{bcolors.ENDC}")
 					continue
 
-		elif bv == "Failed" and cv == "Failed":
-			# New 16S identification! (Here is where SyFi could be used!)
-			#	1. Extract 16S sequences
-			#	2. Remove duplicates
-			#	3. Blast online
-			#	4. Compare pre and new taxonomy (update pre to new)
-			#	4.1. If equal: Stop
-			#	4.2. If different: Re-run Busco and Annotation
-			continue
-
-	
-
-elif comp == "Below":
-	# 80 Validation
-	database = busco_dict[LjTaxa[folder]]
-	if database != "NA":
-		gwf.target_from_template("{}_80_busco".format(folder), assembly_validation(assembly="20-Assembly/{}/flye/assembly.fasta".format(folder), database=database, out_dir="80.2-Validation/flye/{}".format(folder), threads=4, memory=24, folder=folder))
-
-		# Validate BUSCO
-		b = [i for i in os.listdir("80.2-Validation/{}/Busco").format(folder) if i[-5:] == ".json"][0]
-		try:
-			bf = open("80.2-Validation/{}/Busco/{}".format(folder,b))
-			bd = json.load(bf)
-			bv = validate_busco(bd)
-			bf.close()
-		except:
-			print("Error: 80.2-Validation/{}/Busco/{} is missing or empty.".format(folder,b))
-			continue
-
-		# Validate CheckM
-		c = "80.2-Validation/{}/CheckM/results.tsv"
-		try:
-			cv = validate_checkm(c)
-		except:
-			print("Error: {} is missing or empty.".format(c))
-			continue
-
-	# Check validation output
-	if "bv" in globals() and "cv" in globals():
-		if bv == "Pass" and cv == "Pass":
-			# 70 Annotation
-			out_dir_yaml = "20-Assembly/{}/flye/{}".format(folder, folder)
-			genus = LjGenus[folder]
-			if not os.path.exists(out_dir_yaml + ".submol.yml") and not os.path.exists(out_dir_yaml + ".input.yml"):
-				pgap_files_creator(genus = genus, assembly = "20-Assembly/{}/flye/assembly.fasta".format(folder), out_dir = out_dir_yaml)
-			
-		if os.path.exists(out_dir_yaml + '.submol.yml') and os.path.exists(out_dir_yaml + '.input.yml') and genus != "NA":
-			gwf.target_from_template("{}_70.2_annotation".format(folder), annotation(assembly="20-Assembly/{}/flye/assembly.fasta".format(folder), input_yaml = "{}.input.yml".format(out_dir_yaml), out_dir="70.2-Annotation/{}/annotation".format(folder), threads=1, memory=4, folder=folder))
-
-		# Check annotation output
-		a = "70.2-Annotation/{}/annotation/annot.gff"
-		try:
-			av = validate_pgap(a)
-			if av == "Pass":
-				# Move assembly to Improved Genome
+			elif bv == "Failed" and cv == "Failed":
+				# New 16S identification! (Here is where SyFi could be used!)
+				#	1. Extract 16S sequences
+				#	2. Remove duplicates
+				#	3. Blast online
+				#	4. Compare pre and new taxonomy (update pre to new)
+				#	4.1. If equal: Stop
+				#	4.2. If different: Re-run Busco and Annotation
 				continue
-		except:
-			print("Error: {} is missing or empty.".format(c))
-			continue
-		elif bv == "Failed" and cv == "Failed":
-			continue
+
+	elif comp == "Below":
+		# 20 Quast
+		gwf.target_from_template("{}_20_quast_assembly".format(folder), quast(assembly="20-Assembly/{}/flye/assembly.fasta".format(folder), out_dir="20-Assembly/{}/flye/Quast".format(folder), threads=4, memory=32))
+
+		# 20 Alignment
+		gwf.target_from_template("{}_20_align_illumina".format(folder), align_illumina(assembly="20-Assembly/{}/flye/assembly.fasta".format(folder), illumina_corr_1="10-Correction/{}/Illumina/corrected/{}".format(folder, illumina_corr_1), illumina_corr_2="10-Correction/{}/Illumina/corrected/{}".format(folder, illumina_corr_2), out_dir="20-Assembly/{}/Align".format(folder), threads=4, memory=16))
+		gwf.target_from_template("{}_20_align_nanopore".format(folder), align_nanopore(assembly="20-Assembly/{}/flye/assembly.fasta".format(folder), nanopore_corr="10-Correction/{}/Nanopore/nanopore.corrected.fasta".format(folder), out_dir="20-Assembly/{}/Align".format(folder), threads=4, memory=16))
+
+		# 20 Coverage
+		gwf.target_from_template("{}_20_coverage".format(folder), coverage(in_dir="20-Assembly/{}/Align".format(folder), out_dir="20-Assembly/{}/Coverage".format(folder), memory=8))
+
+		# 20 Coverage Plot
+		gwf.target_from_template("{}_20_plot_coverage".format(folder), plot_coverage(in_dir="20-Assembly/{}/Coverage".format(folder), out_dir="20-Assembly/{}/Coverage/CovPlots".format(folder), memory=8, folder=folder))
+
+		# 40 Validation
+		database = busco_dict[LjTaxa[folder]]
+		if database != "NA":
+			gwf.target_from_template("{}_40_validation_assembly".format(folder), assembly_validation(assembly="20-Assembly/{}/flye/assembly.fasta".format(folder), database=database, out_dir="40-Validation/{}/flye".format(folder), threads=4, memory=24))
+
+			# Validate BUSCO
+			try:
+				b = [i for i in os.listdir("40-Validation/{}/flye/Busco").format(folder) if i[-5:] == ".json"][0]
+				bf = open("40-Validation/{}/flye/Busco/{}".format(folder,b))
+				bd = json.load(bf)
+				bv = validate_busco(bd)
+				bf.close()
+			except:
+				if os.path.isdir("40-Validation/{}/flye/Busco".format(folder)):
+					print(f"{bcolors.FAIL}Error: 40-Validation/{folder}/flye/Busco summary file is missing or empty.{bcolors.ENDC}\n")
+					continue
+
+			# Validate CheckM
+			c = "40-Validation/{}/flye/CheckM/results.tsv"
+			try:
+				cv = validate_checkm(c)
+			except:
+				if os.path.isdir("40-Validation/{}/flye/CheckM".format(folder)):
+					print(f"{bcolors.FAIL}Error: {c} is missing or empty.{bcolors.ENDC}\n")
+					continue
+
+		# Check validation output
+		if "bv" in globals() and "cv" in globals():
+			if bv == "Pass" and cv == "Pass":
+				# 50 Annotation
+				out_dir_yaml = "20-Assembly/{}/flye/{}".format(folder, folder)
+				genus = LjGenus[folder]
+				if not os.path.exists(out_dir_yaml + ".submol.yml") and not os.path.exists(out_dir_yaml + ".input.yml"):
+					pgap_files_creator(genus = genus, assembly = "20-Assembly/{}/flye/assembly.fasta".format(folder), out_dir = out_dir_yaml)
+				
+				if os.path.exists(out_dir_yaml + '.submol.yml') and os.path.exists(out_dir_yaml + '.input.yml') and genus != "NA":
+					gwf.target_from_template("{}_50_annotation_assembly".format(folder), annotation(assembly="20-Assembly/{}/flye/assembly.fasta".format(folder), input_yaml = "{}.input.yml".format(out_dir_yaml), out_dir="50-Annotation/{}/annotation".format(folder), threads=1, memory=4, folder=folder))
+
+				# Check annotation output
+				a = "50-Annotation/{}/annotation/annot.gff"
+				try:
+					av = validate_pgap(a)
+					if av == "Pass":
+						# Move assembly to Improved Genome
+						continue
+				except:
+					print(f"{bcolors.FAIL}Error: {c} is missing or empty.{bcolors.ENDC}")
+					continue
+
+			elif bv == "Failed" and cv == "Failed":
+				continue
 
 # SummaryTable
 gwf.target('SummaryTableCompleteGenomes', inputs=[file], outputs=['SummaryTableCompleteGenomes.tsv']) << """
