@@ -621,11 +621,11 @@ for row in f:
 		# 40 Validation
 		database = busco_dict[LjTaxa[folder]]
 		if database != "NA":
-			gwf.target_from_template("{}_40_validation_hybridassembly".format(folder), assembly_validation(assembly="30-HybridAssembly/{}/unicycler/assembly.fasta".format(folder), database=database, out_dir="40-Validation/{}/unicycler/".format(folder), threads=4, memory=24))
+			gwf.target_from_template("{}_40_validation_hybridassembly".format(folder), assembly_validation(assembly="30-HybridAssembly/{}/unicycler/assembly.fasta".format(folder), database=database, out_dir="40-Validation/{}/unicycler".format(folder), threads=4, memory=24))
 
 			# Validate BUSCO
 			try:
-				b = [i for i in os.listdir("40-Validation/{}/unicycler/Busco").format(folder) if i[-5:] == ".json"][0]
+				b = [i for i in os.listdir("40-Validation/{}/unicycler/Busco".format(folder)) if i[-5:] == ".json"][0]
 				bf = open("40-Validation/{}/unicycler/Busco/{}".format(folder,b))
 				bd = json.load(bf)
 				bv = validate_busco(bd)
@@ -698,7 +698,7 @@ for row in f:
 
 			# Validate BUSCO
 			try:
-				b = [i for i in os.listdir("40-Validation/{}/flye/Busco").format(folder) if i[-5:] == ".json"][0]
+				b = [i for i in os.listdir("40-Validation/{}/flye/Busco".format(folder)) if i[-5:] == ".json"][0]
 				bf = open("40-Validation/{}/flye/Busco/{}".format(folder,b))
 				bd = json.load(bf)
 				bv = validate_busco(bd)
