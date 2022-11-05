@@ -101,7 +101,7 @@ def plot_coverage(in_dir, out_dir, memory, folder):
 
 	# R
 	conda activate Renv
-	Rscript coverage.R -i {in_dir} -o {out_dir}
+	Rscript src/coverage.R -i {in_dir} -o {out_dir}
 	'''.format(in_dir=in_dir, out_dir=out_dir)
 
 	return AnonymousTarget(inputs=inputs, outputs=outputs, options=options, spec=spec)

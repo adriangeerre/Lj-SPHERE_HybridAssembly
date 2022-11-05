@@ -25,7 +25,7 @@ import os
 import sys
 import json
 import statistics as st # Python v3.4 or above
-from gwf import Workflow, AnonymousTarget
+from gwf import Workflow
 
 gwf = Workflow(defaults={"account": "CCRP_Data"})
 
@@ -211,13 +211,20 @@ for row in f:
 				try:
 					av = validation.validate_pgap(a)
 					if av == "Pass":
+						# Create folder
+						if not os.path.isdir("60-Genomes/Complete"): os.makedirs("60-Genomes/Complete")
+
 						# Move assembly to Complete Genome
-						continue
+						os.system("cp 30-HybridAssembly/{}/unicycler/assembly.fasta 60-Genomes/Complete/{}.assembly".format(folder, folder))
+
+						# Remove assembly from Improved Genome
+						if os.path.exists("60-Genomes/Improved/{}.assembly".format(folder)): os.remove("60-Genomes/Improved/{}.assembly".format(folder))
+
 				except:
 					print(f"{bcolors.FAIL}Error: {c} is missing or empty.{bcolors.ENDC}")
 					continue
 
-			elif bv == "Failed" and cv == "Failed":
+			elif bv == "Failed" or cv == "Failed":
 				# New 16S identification! (Here is where SyFi could be used!)
 				#	1. Extract 16S sequences
 				#	2. Remove duplicates
@@ -284,13 +291,17 @@ for row in f:
 				try:
 					av = validation.validate_pgap(a)
 					if av == "Pass":
+						# Create folder
+						if not os.path.isdir("60-Genomes/Improved"): os.makedirs("60-Genomes/Improved")
+
 						# Move assembly to Improved Genome
-						continue
+						os.system("cp 20-Assembly/{}/flye/assembly.fasta 60-Genomes/Improved/{}.assembly".format(folder, folder))
+
 				except:
 					print(f"{bcolors.FAIL}Error: {c} is missing or empty.{bcolors.ENDC}")
 					continue
 
-			elif bv == "Failed" and cv == "Failed":
+			elif bv == "Failed" or cv == "Failed":
 				continue
 
 # SummaryTable
