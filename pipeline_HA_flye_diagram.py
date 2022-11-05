@@ -21,11 +21,8 @@ from src import validation
 from src import annotation
 
 # External
-from genericpath import isdir
-from html import entities
 import os
 import sys
-import yaml
 import json
 import statistics as st # Python v3.4 or above
 from gwf import Workflow, AnonymousTarget

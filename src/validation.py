@@ -1,5 +1,6 @@
 ## Imports
 import os
+import statistics as st # Python v3.4 or above
 from gwf import AnonymousTarget
 
 ## Auxiliary functions
