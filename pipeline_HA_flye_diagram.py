@@ -186,7 +186,7 @@ for row in f:
 					continue
 
 			# Validate CheckM
-			c = "40-Validation/{}/unicycler/CheckM/results.tsv"
+			c = "40-Validation/{}/unicycler/CheckM/results.tsv".format(folder)
 			try:
 				cv = validation.validate_checkm(c)
 			except:
@@ -204,10 +204,10 @@ for row in f:
 					annotation.pgap_files_creator(genus = genus, assembly = "30-HybridAssembly/{}/unicycler/assembly.fasta".format(folder), out_dir = out_dir_yaml)
 					
 				if os.path.exists(out_dir_yaml + '.submol.yml') and os.path.exists(out_dir_yaml + '.input.yml') and genus != "NA":
-					gwf.target_from_template("{}_50_annotation_hybridassembly".format(folder), annotation.annotation(assembly="30-HybridAssembly/{}/unicycler/assembly.fasta".format(folder), input_yaml = "{}.input.yml".format(out_dir_yaml), out_dir="50-Annotation/{}/annotation".format(folder), threads=1, memory=4))
+					gwf.target_from_template("{}_50_annotation_hybridassembly".format(folder), annotation.annotation(assembly="30-HybridAssembly/{}/unicycler/assembly.fasta".format(folder), input_yaml = "{}.input.yml".format(out_dir_yaml), out_dir="50-Annotation/{}/unicycler".format(folder), threads=1, memory=4))
 
 				# Check annotation output
-				a = "50-Annotation/{}/annotation/annot.gff"
+				a = "50-Annotation/{}/unicycler/annotation/annot.gff".format(folder)
 				try:
 					av = validation.validate_pgap(a)
 					if av == "Pass":
@@ -221,14 +221,17 @@ for row in f:
 						if os.path.exists("60-Genomes/Improved/{}.assembly".format(folder)): os.remove("60-Genomes/Improved/{}.assembly".format(folder))
 
 				except:
-					print(f"{bcolors.FAIL}Error: {c} is missing or empty.{bcolors.ENDC}")
+					if os.path.isdir("50-Annotation/{}/annotation".format(folder)):
+						print(f"{bcolors.FAIL}Error: {a} is missing or empty.{bcolors.ENDC}")
 					continue
 
 			elif bv == "Failed" or cv == "Failed":
 				# New 16S identification! (Here is where SyFi could be used!)
+				# LINUX
 				#	1. Extract 16S sequences
 				#	2. Remove duplicates
 				#	3. Blast online
+				# PYTHON
 				#	4. Compare pre and new taxonomy (update pre to new)
 				#	4.1. If equal: Stop
 				#	4.2. If different: Re-run Busco and Annotation
@@ -266,7 +269,7 @@ for row in f:
 					continue
 
 			# Validate CheckM
-			c = "40-Validation/{}/flye/CheckM/results.tsv"
+			c = "40-Validation/{}/flye/CheckM/results.tsv".format(folder)
 			try:
 				cv = validation.validate_checkm(c)
 			except:
@@ -284,10 +287,10 @@ for row in f:
 					annotation.pgap_files_creator(genus = genus, assembly = "20-Assembly/{}/flye/assembly.fasta".format(folder), out_dir = out_dir_yaml)
 				
 				if os.path.exists(out_dir_yaml + '.submol.yml') and os.path.exists(out_dir_yaml + '.input.yml') and genus != "NA":
-					gwf.target_from_template("{}_50_annotation_assembly".format(folder), annotation.annotation(assembly="20-Assembly/{}/flye/assembly.fasta".format(folder), input_yaml = "{}.input.yml".format(out_dir_yaml), out_dir="50-Annotation/{}/annotation".format(folder), threads=1, memory=4))
+					gwf.target_from_template("{}_50_annotation_assembly".format(folder), annotation.annotation(assembly="20-Assembly/{}/flye/assembly.fasta".format(folder), input_yaml = "{}.input.yml".format(out_dir_yaml), out_dir="50-Annotation/{}/flye/".format(folder), threads=1, memory=4))
 
 				# Check annotation output
-				a = "50-Annotation/{}/annotation/annot.gff"
+				a = "50-Annotation/{}/flye/annotation/annot.gff".format(folder)
 				try:
 					av = validation.validate_pgap(a)
 					if av == "Pass":

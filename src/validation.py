@@ -29,8 +29,8 @@ def validate_checkm(cm):
 	l = f.readlines()[1].strip().split()
 	f.close()
 	# Values
-	if l[-3] > 90: r["Comp"] = 1
-	if l[-3] < 5: r["Comp"] = 1
+	if float(l[-3]) > 90: r["Comp"] = 1
+	if float(l[-2]) < 5: r["Cont"] = 1
 	# Check
 	if sum(list(r.values())) == 2:
 		return "Pass"
@@ -86,7 +86,7 @@ def validate_pgap(gff):
 	if cd["rRNA_23S"] >= 1 and abs(st.median(d["rRNA_23S"]) - l23S) <= l23S * 0.1: ribo["23S"] = 1
 	# Values
 	tgenes = cd["gene"] + cd["pseudogene"]
-	gene_ratio = (tgenes * 1000) / d[tlength][0]
+	gene_ratio = (tgenes * 1000) / d['tlength'][0]
 	if gene_ratio > 0.9: r["GeneRatio"] = 1
 	if cd["pseudogene"] / tgenes < 0.2: r["PseudoRatio"] = 1
 	if cd["tRNA"] > 20: r["tRNA"] = 1
@@ -138,8 +138,8 @@ def assembly_validation(assembly, database, out_dir, threads, memory):
 
 	# CheckM
 	conda activate CheckM
-	checkm lineage_wf -x fasta -t {threads} {assembly_folder} {assembly} {out_dir}/CheckM --reduced_tree
-	checkm qa {out_dir}/CheckM/lineage.ms -f {out_dir}/CheckM/results.tsv --tab_table -t {threads}
+	checkm lineage_wf -x fasta -t {threads} {assembly_folder} {out_dir}/CheckM --reduced_tree
+	checkm qa {out_dir}/CheckM/lineage.ms {out_dir}/CheckM -f {out_dir}/CheckM/results.tsv --tab_table -t {threads}
 	'''.format(assembly=assembly, assembly_folder=assembly.strip("assembly.fasta"), database=database, out_dir=out_dir, threads=threads)
 
 	return AnonymousTarget(inputs=inputs, outputs=outputs, options=options, spec=spec)
