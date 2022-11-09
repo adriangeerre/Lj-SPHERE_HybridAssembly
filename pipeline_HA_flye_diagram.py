@@ -174,23 +174,23 @@ for row in f:
 			gwf.target_from_template("{}_40_validation_hybridassembly".format(folder), validation.assembly_validation(assembly="30-HybridAssembly/{}/unicycler/assembly.fasta".format(folder), database=database, out_dir="40-Validation/{}/unicycler".format(folder), threads=4, memory=24))
 
 			# Validate BUSCO
-			try:
-				b = [i for i in os.listdir("40-Validation/{}/unicycler/Busco".format(folder)) if i[-5:] == ".json"][0]
-				bf = open("40-Validation/{}/unicycler/Busco/{}".format(folder,b))
-				bd = json.load(bf)
-				bv = validation.validate_busco(bd)
-				bf.close()
-			except:
-				if os.path.isdir("40-Validation/{}/unicycler/Busco".format(folder)):
+			if os.path.isdir("40-Validation/{}/unicycler/Busco".format(folder)):
+				try:
+					b = [i for i in os.listdir("40-Validation/{}/unicycler/Busco".format(folder)) if i[-5:] == ".json"][0]
+					bf = open("40-Validation/{}/unicycler/Busco/{}".format(folder,b))
+					bd = json.load(bf)
+					bv = validation.validate_busco(bd)
+					bf.close()
+				except:
 					print(f"{bcolors.FAIL}Error: 40-Validation/{folder}/unicycler/Busco summary file is missing or empty.{bcolors.ENDC}\n")
 					continue
 
 			# Validate CheckM
-			c = "40-Validation/{}/unicycler/CheckM/results.tsv".format(folder)
-			try:
-				cv = validation.validate_checkm(c)
-			except:
-				if os.path.isdir("40-Validation/{}/unicycler/CheckM".format(folder)):
+			if os.path.isdir("40-Validation/{}/unicycler/CheckM".format(folder)):
+				c = "40-Validation/{}/unicycler/CheckM/results.tsv".format(folder)
+				try:
+					cv = validation.validate_checkm(c)
+				except:
 					print(f"{bcolors.FAIL}Error: {c} is missing or empty.{bcolors.ENDC}\n")
 					continue
 
@@ -198,32 +198,34 @@ for row in f:
 		if "bv" in globals() and "cv" in globals():
 			if bv == "Pass" and cv == "Pass":
 				# 50 Annotation
-				out_dir_yaml = "30-HybridAssembly/{}/unicycler/{}".format(folder, folder)
-				genus = LjGenus[folder]
-				if not os.path.exists(out_dir_yaml + ".submol.yml") and not os.path.exists(out_dir_yaml + ".input.yml"):
-					annotation.pgap_files_creator(genus = genus, assembly = "30-HybridAssembly/{}/unicycler/assembly.fasta".format(folder), out_dir = out_dir_yaml)
+				if os.path.isdir("30-HybridAssembly/{}/unicycler".format(folder)):
+					out_dir_yaml = "30-HybridAssembly/{}/unicycler/{}".format(folder, folder)
+					genus = LjGenus[folder]
+					if not os.path.exists(out_dir_yaml + ".submol.yml") and not os.path.exists(out_dir_yaml + ".input.yml"):
+						annotation.pgap_files_creator(genus = genus, assembly = "30-HybridAssembly/{}/unicycler/assembly.fasta".format(folder), out_dir = out_dir_yaml)
 					
-				if os.path.exists(out_dir_yaml + '.submol.yml') and os.path.exists(out_dir_yaml + '.input.yml') and genus != "NA":
-					gwf.target_from_template("{}_50_annotation_hybridassembly".format(folder), annotation.annotation(assembly="30-HybridAssembly/{}/unicycler/assembly.fasta".format(folder), input_yaml = "{}.input.yml".format(out_dir_yaml), out_dir="50-Annotation/{}/unicycler".format(folder), threads=1, memory=4))
+					if os.path.exists(out_dir_yaml + '.submol.yml') and os.path.exists(out_dir_yaml + '.input.yml') and genus != "NA":
+						gwf.target_from_template("{}_50_annotation_hybridassembly".format(folder), annotation.annotation(assembly="30-HybridAssembly/{}/unicycler/assembly.fasta".format(folder), input_yaml = "{}.input.yml".format(out_dir_yaml), out_dir="50-Annotation/{}/unicycler".format(folder), threads=1, memory=4))
 
 				# Check annotation output
-				a = "50-Annotation/{}/unicycler/annotation/annot.gff".format(folder)
-				try:
-					av = validation.validate_pgap(a)
-					if av == "Pass":
-						# Create folder
-						if not os.path.isdir("60-Genomes/Complete"): os.makedirs("60-Genomes/Complete")
+				if os.path.isdir("50-Annotation/{}/unicycler/annotation".format(folder)):
+					a = "50-Annotation/{}/unicycler/annotation/annot.gff".format(folder)
+					try:
+						av = validation.validate_pgap(a)
+						if av == "Pass":
+							# Create folder
+							if not os.path.isdir("60-Genomes/Complete"): os.makedirs("60-Genomes/Complete")
 
-						# Move assembly to Complete Genome
-						os.system("cp 30-HybridAssembly/{}/unicycler/assembly.fasta 60-Genomes/Complete/{}.assembly".format(folder, folder))
+							# Move assembly to Complete Genome
+							os.system("cp 30-HybridAssembly/{}/unicycler/assembly.fasta 60-Genomes/Complete/{}.assembly".format(folder, folder))
 
-						# Remove assembly from Improved Genome
-						if os.path.exists("60-Genomes/Improved/{}.assembly".format(folder)): os.remove("60-Genomes/Improved/{}.assembly".format(folder))
+							# Remove assembly from Improved Genome
+							if os.path.exists("60-Genomes/Improved/{}.assembly".format(folder)): os.remove("60-Genomes/Improved/{}.assembly".format(folder))
 
-				except:
-					if os.path.isdir("50-Annotation/{}/annotation".format(folder)):
-						print(f"{bcolors.FAIL}Error: {a} is missing or empty.{bcolors.ENDC}")
-					continue
+					except:
+						if os.path.isdir("50-Annotation/{}/annotation".format(folder)):
+							print(f"{bcolors.FAIL}Error: {a} is missing or empty.{bcolors.ENDC}")
+						continue
 
 			elif bv == "Failed" or cv == "Failed":
 				# New 16S identification! (Here is where SyFi could be used!)
@@ -257,23 +259,23 @@ for row in f:
 			gwf.target_from_template("{}_40_validation_assembly".format(folder), validation.assembly_validation(assembly="20-Assembly/{}/flye/assembly.fasta".format(folder), database=database, out_dir="40-Validation/{}/flye".format(folder), threads=4, memory=24))
 
 			# Validate BUSCO
-			try:
-				b = [i for i in os.listdir("40-Validation/{}/flye/Busco".format(folder)) if i[-5:] == ".json"][0]
-				bf = open("40-Validation/{}/flye/Busco/{}".format(folder,b))
-				bd = json.load(bf)
-				bv = validation.validate_busco(bd)
-				bf.close()
-			except:
-				if os.path.isdir("40-Validation/{}/flye/Busco".format(folder)):
+			if os.path.isdir("40-Validation/{}/flye/Busco".format(folder)):
+				try:
+					b = [i for i in os.listdir("40-Validation/{}/flye/Busco".format(folder)) if i[-5:] == ".json"][0]
+					bf = open("40-Validation/{}/flye/Busco/{}".format(folder,b))
+					bd = json.load(bf)
+					bv = validation.validate_busco(bd)
+					bf.close()
+				except:
 					print(f"{bcolors.FAIL}Error: 40-Validation/{folder}/flye/Busco summary file is missing or empty.{bcolors.ENDC}\n")
 					continue
 
 			# Validate CheckM
-			c = "40-Validation/{}/flye/CheckM/results.tsv".format(folder)
-			try:
-				cv = validation.validate_checkm(c)
-			except:
-				if os.path.isdir("40-Validation/{}/flye/CheckM".format(folder)):
+			if os.path.isdir("40-Validation/{}/flye/CheckM".format(folder)):
+				c = "40-Validation/{}/flye/CheckM/results.tsv".format(folder)
+				try:
+					cv = validation.validate_checkm(c)
+				except:
 					print(f"{bcolors.FAIL}Error: {c} is missing or empty.{bcolors.ENDC}\n")
 					continue
 
@@ -281,28 +283,30 @@ for row in f:
 		if "bv" in globals() and "cv" in globals():
 			if bv == "Pass" and cv == "Pass":
 				# 50 Annotation
-				out_dir_yaml = "20-Assembly/{}/flye/{}".format(folder, folder)
-				genus = LjGenus[folder]
-				if not os.path.exists(out_dir_yaml + ".submol.yml") and not os.path.exists(out_dir_yaml + ".input.yml"):
-					annotation.pgap_files_creator(genus = genus, assembly = "20-Assembly/{}/flye/assembly.fasta".format(folder), out_dir = out_dir_yaml)
-				
-				if os.path.exists(out_dir_yaml + '.submol.yml') and os.path.exists(out_dir_yaml + '.input.yml') and genus != "NA":
-					gwf.target_from_template("{}_50_annotation_assembly".format(folder), annotation.annotation(assembly="20-Assembly/{}/flye/assembly.fasta".format(folder), input_yaml = "{}.input.yml".format(out_dir_yaml), out_dir="50-Annotation/{}/flye/".format(folder), threads=1, memory=4))
+				if os.path.isdir("20-Assembly/{}/flye".format(folder)):
+					out_dir_yaml = "20-Assembly/{}/flye/{}".format(folder, folder)
+					genus = LjGenus[folder]
+					if not os.path.exists(out_dir_yaml + ".submol.yml") and not os.path.exists(out_dir_yaml + ".input.yml"):
+						annotation.pgap_files_creator(genus = genus, assembly = "20-Assembly/{}/flye/assembly.fasta".format(folder), out_dir = out_dir_yaml)
+					
+					if os.path.exists(out_dir_yaml + '.submol.yml') and os.path.exists(out_dir_yaml + '.input.yml') and genus != "NA":
+						gwf.target_from_template("{}_50_annotation_assembly".format(folder), annotation.annotation(assembly="20-Assembly/{}/flye/assembly.fasta".format(folder), input_yaml = "{}.input.yml".format(out_dir_yaml), out_dir="50-Annotation/{}/flye/".format(folder), threads=1, memory=4))
 
 				# Check annotation output
-				a = "50-Annotation/{}/flye/annotation/annot.gff".format(folder)
-				try:
-					av = validation.validate_pgap(a)
-					if av == "Pass":
-						# Create folder
-						if not os.path.isdir("60-Genomes/Improved"): os.makedirs("60-Genomes/Improved")
+				if os.path.isdir("50-Annotation/{}/flye/annotation".format(folder)):
+					a = "50-Annotation/{}/flye/annotation/annot.gff".format(folder)
+					try:
+						av = validation.validate_pgap(a)
+						if av == "Pass":
+							# Create folder
+							if not os.path.isdir("60-Genomes/Improved"): os.makedirs("60-Genomes/Improved")
 
-						# Move assembly to Improved Genome
-						os.system("cp 20-Assembly/{}/flye/assembly.fasta 60-Genomes/Improved/{}.assembly".format(folder, folder))
+							# Move assembly to Improved Genome
+							os.system("cp 20-Assembly/{}/flye/assembly.fasta 60-Genomes/Improved/{}.assembly".format(folder, folder))
 
-				except:
-					print(f"{bcolors.FAIL}Error: {c} is missing or empty.{bcolors.ENDC}")
-					continue
+					except:
+						print(f"{bcolors.FAIL}Error: {a} is missing or empty.{bcolors.ENDC}")
+						continue
 
 			elif bv == "Failed" or cv == "Failed":
 				continue

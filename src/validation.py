@@ -89,7 +89,7 @@ def validate_pgap(gff):
 	gene_ratio = (tgenes * 1000) / d['tlength'][0]
 	if gene_ratio > 0.9: r["GeneRatio"] = 1
 	if cd["pseudogene"] / tgenes < 0.2: r["PseudoRatio"] = 1
-	if cd["tRNA"] > 20: r["tRNA"] = 1
+	if cd["tRNA"] >= 20: r["tRNA"] = 1
 	if sum(list(ribo.values())) == 3: r["rRNA"] = 1
 	# Check
 	if sum(list(r.values())) == 4:
