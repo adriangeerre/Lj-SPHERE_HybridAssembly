@@ -241,7 +241,7 @@ for row in f:
 
 	elif comp == "Below":
 		# 20 Quast
-		gwf.target_from_template("{}_20_quast_assembly".format(folder), validation.quast(assembly="20-Assembly/{}/flye/assembly.fasta".format(folder), out_dir="20-Assembly/{}/flye/Quast".format(folder), threads=4, memory=32))
+		gwf.target_from_template("{}_20_quast_assembly".format(folder), validation.quast(assembly="20-Assembly/{}/flye/assembly.fasta".format(folder), out_dir="20-Assembly/{}/Quast".format(folder), threads=4, memory=32))
 
 		# 20 Alignment
 		gwf.target_from_template("{}_20_align_illumina".format(folder), coverage.align_illumina(assembly="20-Assembly/{}/flye/assembly.fasta".format(folder), illumina_corr_1="10-Correction/{}/Illumina/corrected/{}".format(folder, illumina_corr_1), illumina_corr_2="10-Correction/{}/Illumina/corrected/{}".format(folder, illumina_corr_2), out_dir="20-Assembly/{}/Align".format(folder), threads=4, memory=16))

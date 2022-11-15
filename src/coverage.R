@@ -8,7 +8,7 @@
 # """ Script to calculate coverage stats and plot contigs coverage for 
 # Nanopore and Illumina alignments against the hybrid assembly created using
 # the same sequencing data. The input data comes from a sorted BAM process
-# with Bedtools genomecov to obtaina .cov file.""" 
+# with Bedtools genomecov to obtain a .cov file.""" 
 # ---------------------------------------------------------------------------
 
 # Libraries
