@@ -18,7 +18,7 @@ from src import correction
 from src import assembly
 from src import coverage
 from src import validation
-from src import annotation
+#from src import annotation
 
 # External
 import glob, os, sys

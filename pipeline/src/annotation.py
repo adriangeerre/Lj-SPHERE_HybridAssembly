@@ -1,9 +1,9 @@
 ## Imports
 import os
 import yaml
-from gwf import AnonymousTarget
+import subprocess
 
-## Auxiliary functions
+## Auxiliary function
 # PGAP yaml
 def pgap_files_creator(genus, assembly, out_dir):
 	# Submol
@@ -21,24 +21,19 @@ def pgap_files_creator(genus, assembly, out_dir):
 	with open(input, 'w') as yaml_file:
 		yaml.dump(dct_input, yaml_file)
 
-## GWF function
 # Annotation
-def annotation(assembly, input_yaml, out_dir, threads, memory):
+def annotation(input_yaml, out_dir, threads, memory, conda_path):
 	# Folder structure
 	if os.path.isdir(out_dir) == False: os.makedirs(out_dir)
 
-	# GWF
-	inputs = ["{}".format(assembly), "{}".format(input_yaml)]
-	outputs = ["{}/annotation/annot.{}".format(out_dir, ext) for ext in ["faa","fna","gbk","gff","sqn"]]
-	options = {'cores': '{}'.format(threads), 'memory': '{}g'.format(memory), 'queue': 'short', 'walltime': '12:00:00'}
-
-	spec='''
+	cmd='''
 	# Cache and tmp folders
 	export SINGULARITY_CACHEDIR=/scratch/$SLURM_JOBID
 	export SINGULARITY_TMPDIR=/scratch/$SLURM_JOBID
 
 	# PGAP (already in path)
 	python /home/agomez/programas/PGAP/pgap.py -d -n --no-internet --ignore-all-errors --docker singularity -o {out_dir}/annotation --memory {memory} --container-path ~/programas/SingularityImages/pgap_2022-08-11.build6275.sif {input_yaml}
-	'''.format(input_yaml=input_yaml, out_dir=out_dir, memory=memory)
+	'''.format(input_yaml=input_yaml, out_dir=out_dir, memory=memory, conda_path=conda_path)
 
-	return AnonymousTarget(inputs=inputs, outputs=outputs, options=options, spec=spec)
+	subprocess.check_call(cmd, shell=True)
+

@@ -14,12 +14,6 @@
 
 # Internal
 from src import indiv, multi
-#from src import qc
-#from src import correction
-#from src import assembly
-#from src import coverage
-#from src import validation
-#from src import annotation
 
 # External
 #import os
@@ -50,7 +44,7 @@ def params():
     parser = argparse.ArgumentParser(prog='HybridAssembly', description='Python pipeline to perform hybrid assembly of nanopore and illumina sequencing data. It is based on Benjamin\'s Perry pipeline and uses flye and Unicycler as the nanopore and hybrid assemblers, respectively.')
 
     # Subparsers
-    subparsers = parser.add_subparsers(help="Sub-commands help")
+    subparsers = parser.add_subparsers()
     parser_indiv = subparsers.add_parser('indiv', help='Individual')
     parser_multi = subparsers.add_parser('multi', help='Multiple')
     
@@ -59,6 +53,7 @@ def params():
     parser_indiv.add_argument('-r2', '--illumina-reverse', dest='short_reverse', action='store', help='R2/Reverse illumina reads', required=True)
     parser_indiv.add_argument('-n', '--nanopore', dest='long', action='store', help='Nanopore reads', required=True)
     parser_indiv.add_argument('-p', '--prefix', dest='prefix', action='store', help='Prefix', required=True)
+    parser_indiv.add_argument('-g', '--genus', dest='genus', action='store', help='Genus', required=True)
     parser_indiv.add_argument('-t', '--threads', dest='threads', action='store', help='Threads (default: %(default)s)', default=1, type=int)
     #parser_indiv.add_argument('-f', '--force', dest='boolean', action='store', help='Force recomputation', choices=['True','False'], default=False)
 
@@ -82,7 +77,8 @@ def params():
 # Empty exec
 def empty_exec(args):
     if len(vars(args)) == 0:
-        print("Please, select a mode. For more information run \"python HybridAssembly.py --help\"")
+        print("usage: HybridAssembly [-h] {indiv,multi} ...\n")
+        print("Please, select a mode. For more information run \"python HybridAssembly.py --help\"\n")
         sys.exit()
 
 # Execution
@@ -100,7 +96,7 @@ if __name__ == '__main__':
 
     # Call mode
     if args.func == "indiv":
-        indiv.init(read1=args.short_forward, read2=short_reverse, long=args.long, prefix=args.prefix, threads=args.threads) 
+        indiv.init(read1=args.short_forward, read2=short_reverse, long=args.long, prefix=args.prefix, genus=args.genus, threads=args.threads) 
     elif args.func == "multi":
         multi.init(samples=args.samples, threads=args.threads)
 
