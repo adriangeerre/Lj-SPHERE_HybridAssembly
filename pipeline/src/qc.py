@@ -1,36 +1,36 @@
 ## Imports
-import glob, os, sys
-from subprocess import check_call
+import os
+import subprocess
 
 # Fastqc
-def qc_illumina(illumina_1, illumina_2, out_dir, threads):
+def qc_illumina(illumina_1, illumina_2, out_dir, threads, conda_path):
 	# Folder structure
 	if os.path.isdir(out_dir) == False: os.makedirs(out_dir)
 
 	# Execution
-	spec='''
-	# Source conda to work with environments
-	source ~/programas/minconda3.9/etc/profile.d/conda.sh
-
+	cmd='''/bin/bash -c "
+	# Source conda to work with environments	
+	source {conda_path}/etc/profile.d/conda.sh
+	
 	# FastQC
 	conda activate ha-flye
-	fastqc -t {threads} -o {out_dir} {illumina_1} {illumina_2}
-	'''.format(illumina_1=illumina_1, illumina_2=illumina_2, out_dir=out_dir, threads=threads)
+	fastqc -t {threads} -o {out_dir} {illumina_1} {illumina_2}"
+	'''.format(illumina_1=illumina_1, illumina_2=illumina_2, out_dir=out_dir, threads=threads, conda_path=conda_path)
 
-	check_call(spec, shell=True)
+	subprocess.check_call(cmd, shell=True)
 
 # NanoPlot
-def qc_nanopore(nanopore, out_dir, threads, memory, folder):
+def qc_nanopore(nanopore, out_dir, threads, conda_path):
 	# Folder structure
 	if os.path.isdir(out_dir) == False: os.makedirs(out_dir)
 
-	spec='''
+	cmd='''/bin/bash -c "
 	# Source conda to work with environments
-	source ~/programas/minconda3.9/etc/profile.d/conda.sh
+	source {conda_path}/etc/profile.d/conda.sh
 
 	# NanoPlot
 	conda activate NanoQC
-	NanoPlot -o {out_dir} -p {prefix} --info_in_report --N50 --title {title} --fastq {nanopore} --threads {threads}
-	'''.format(nanopore=nanopore, out_dir=out_dir, prefix="{}-".format(nanopore.split("/")[-1].replace(".fastq.gz","")), title=nanopore.split("/")[-1], threads=threads)
+	NanoPlot -o {out_dir} -p {prefix} --info_in_report --N50 --title {title} --fastq {nanopore} --threads {threads}"
+	'''.format(nanopore=nanopore, out_dir=out_dir, prefix=".".join(nanopore.split("/")[-1].split(".")[:-2]) + "_", title=nanopore.split("/")[-1], threads=threads, conda_path=conda_path)
 
-	check_call(spec, shell=True)
+	subprocess.check_call(cmd, shell=True)
