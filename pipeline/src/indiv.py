@@ -12,18 +12,14 @@
 # Imports 
 # ---------------------------------------------------------------------------
 
-# Internal
-from src import qc
-from src import correction
-from src import assembly
-from src import coverage
-from src import validation
-from src import annotation
-
 # External
-#import glob, os, sys
+import os
 import json
 import subprocess
+
+# Internal
+from src import annotation, assembly, correction, coverage, qc, validation
+
 
 # Functions
 def init(read1, read2, long, prefix, genus, threads):
@@ -70,10 +66,10 @@ def init(read1, read2, long, prefix, genus, threads):
     
     cmdd = f"grep -c '^>' {d}"
     cmdh = f"grep -c '^>' {h}"
-    dp = subprocess.Popen(cmdd, shell=True, stdout=subprocess.PIPE)
-    hp = subprocess.Popen(cmdh, shell=True, stdout=subprocess.PIPE)
-    outd, errd = dp.communicate()
-    outh, errh = hp.communicate()
+    dp = subprocess.Popen(cmdd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    hp = subprocess.Popen(cmdh, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    outd,errd = dp.communicate()
+    outh,errh = hp.communicate()
 
     if int(outd) == int(outh):
         pass
@@ -88,10 +84,10 @@ def init(read1, read2, long, prefix, genus, threads):
     coverage.align_nanopore(assembly=f"30-HybridAssembly/{prefix}/unicycler/assembly.fasta", nanopore_corr=f"10-Correction/{prefix}/Nanopore/nanopore.corrected.fasta", out_dir=f"30-HybridAssembly/{prefix}/Align", threads=threads, conda_path=conda_path)
     
     # Obtain coverage
-    coverage.coverage(in_dir, out_dir, conda_path=conda_path)
+    coverage.coverage(in_dir="30-HybridAssembly/{prefix}/Align", out_dir=f"30-HybridAssembly/{prefix}/Coverage", conda_path=conda_path)
 
     # Plot coverage
-    coverage.plot_coverage(in_dir, out_dir, prefix=prefix, conda_path=conda_path)
+    coverage.plot_coverage(in_dir=f"30-HybridAssembly/{prefix}/Align", out_dir=f"30-HybridAssembly/{prefix}/Coverage/CovPlots", prefix=prefix, conda_path=conda_path)
 
     # Validation
     #-----------
@@ -108,22 +104,22 @@ def init(read1, read2, long, prefix, genus, threads):
     if os.path.isdir(f"40-Validation/{prefix}/unicycler/Busco"):
         try:
             b = [i for i in os.listdir(f"40-Validation/{prefix}/unicycler/Busco") if i[-5:] == ".json"][0]
-            bf = open("40-Validation/{prefix}/unicycler/Busco/{b}")
+            bf = open(f"40-Validation/{prefix}/unicycler/Busco/{b}")
             bd = json.load(bf)
             bv = validation.validate_busco(bd)
             bf.close()
         except:
+            pass
             #print(f"{bcolors.FAIL}Error: 40-Validation/{folder}/unicycler/Busco summary file is missing or empty.{bcolors.ENDC}\n")
-            continue
 
     # Validate CheckM
-    if os.path.isdir("40-Validation/{prefix}/unicycler/CheckM"):
-        c = "40-Validation/{prefix}/unicycler/CheckM/results.tsv"
+    if os.path.isdir(f"40-Validation/{prefix}/unicycler/CheckM"):
+        c = f"40-Validation/{prefix}/unicycler/CheckM/results.tsv"
         try:
             cv = validation.validate_checkm(c)
         except:
+            pass
             #print(f"{bcolors.FAIL}Error: {c} is missing or empty.{bcolors.ENDC}\n")
-            continue
 
 
     # Annotation
@@ -132,17 +128,17 @@ def init(read1, read2, long, prefix, genus, threads):
         if bv == "Pass" and cv == "Pass":
             if os.path.isdir(f"30-HybridAssembly/{prefix}/unicycler"):
                 out_dir_yaml = f"30-HybridAssembly/{prefix}/unicycler/{prefix}"
-				if not os.path.exists(out_dir_yaml + ".submol.yml") and not os.path.exists(out_dir_yaml + ".input.yml"):
-				    annotation.pgap_files_creator(genus = genus, assembly = "30-HybridAssembly/{prefix}/unicycler/assembly.fasta", out_dir = out_dir_yaml)
-					
-				if os.path.exists(out_dir_yaml + '.submol.yml') and os.path.exists(out_dir_yaml + '.input.yml') and genus != "NA":
-                    annotation.annotation(input_yaml=f"{out_dir_yaml}.input.yml", out_dir="50-Annotation/{prefix}/unicycler", memory=4, threads=1,  conda_path=conda_path)
+                if not os.path.exists(out_dir_yaml + ".submol.yml") and not os.path.exists(out_dir_yaml + ".input.yml"):
+                    annotation.pgap_files_creator(genus = genus, assembly = f"30-HybridAssembly/{prefix}/unicycler/assembly.fasta", out_dir = out_dir_yaml)
+                    
+                if os.path.exists(out_dir_yaml + '.submol.yml') and os.path.exists(out_dir_yaml + '.input.yml') and genus != "NA":
+                    annotation.annotation(input_yaml=f"{out_dir_yaml}.input.yml", out_dir=f"50-Annotation/{prefix}/unicycler", memory=4, threads=1,  conda_path=conda_path)
 
 def conda_path():
     # Exec terminal command
     cmd = "conda info | grep 'base environment' | awk '{print $4}'"
     proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    out, err = proc.communicate()
+    out,err = proc.communicate()
 
     # Out to string
     out = str(out.strip()).replace("'","")[1:]
