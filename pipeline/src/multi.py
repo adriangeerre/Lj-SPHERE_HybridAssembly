@@ -25,6 +25,5 @@ import glob, os, sys
 from subprocess import check_call
 
 # Functions
-def init(samples, threads):
-    print(samples)
+def init(samples, threads, run_coverage):
     pass

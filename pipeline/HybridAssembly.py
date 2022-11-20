@@ -54,6 +54,7 @@ def params():
     parser_indiv.add_argument('-n', '--nanopore', dest='long', action='store', help='Nanopore reads', required=True)
     parser_indiv.add_argument('-p', '--prefix', dest='prefix', action='store', help='Prefix', required=True)
     parser_indiv.add_argument('-g', '--genus', dest='genus', action='store', help='Genus', required=True)
+    parser_indiv.add_argument('-rc', '--run-coverage', dest='run_coverage', action='store', help='Compute and plot Illumina and/or Nanopore coverage against assembly default: %(default)s)', default=False, type=bool)
     parser_indiv.add_argument('-t', '--threads', dest='threads', action='store', help='Threads (default: %(default)s)', default=1, type=int)
     #parser_indiv.add_argument('-f', '--force', dest='boolean', action='store', help='Force recomputation', choices=['True','False'], default=False)
 
@@ -61,6 +62,7 @@ def params():
 
     # Arguments Multi
     parser_multi.add_argument('-l', '--list-samples', dest='samples', action='store', help='List of samples (process multiples samples)', required=True)
+    parser_multi.add_argument('-rc', '--run-coverage', dest='run_coverage', action='store', help='Compute and plot Illumina and/or Nanopore coverage against assembly default: %(default)s)', default=False, type=bool)
     parser_multi.add_argument('-t', '--threads', dest='threads', action='store', help='Threads (default: %(default)s)', default=1, type=int)
     #parser_multi.add_argument('-f', '--force', dest='boolean', action='store', help='Force recomputation', choices=['True','False'], default=False)
 
@@ -81,6 +83,40 @@ def empty_exec(args):
         print("Please, select a mode. For more information run \"python HybridAssembly.py --help\"\n")
         sys.exit()
 
+# Summary
+#--------
+def exec_info(args):
+    # Define longest argument value
+    maxlen = max([len(str(i)) for i in vars(args).values()])
+    print(maxlen)
+
+    if args.func == "indiv":
+        maxlen += 14
+        message = (
+        f"\n{'-'*maxlen}\n"
+        f"\nSummary\n"
+        f"{' '*2}Mode: {args.func}\n"
+        f"{' '*2}Short reads:\n{' '*4}{args.short_forward}\n{' '*4}{args.short_reverse}\n"
+        f"{' '*2}Long reads: {args.long}\n"
+        f"{' '*2}Prefix: {args.prefix}\n"
+        f"{' '*2}Genus: {args.genus}\n"
+        f"{' '*2}Threads: {args.threads}\n"
+        f"{' '*2}Run Coverage: {args.run_coverage}\n"
+        f"\n{'-'*maxlen}\n"
+        )
+        print(message)
+    elif args.func == "multi":
+        maxlen += 16
+        message = (
+            f"\n{'-'*maxlen}\n"
+            f"\nSummary\n"
+            f"{' '*2}Sample files: {args.samples}\n"
+            f"{' '*2}Threads: {args.threads}\n"
+            f"{' '*2}Run Coverage: {args.run_coverage}\n"
+            f"\n{'-'*maxlen}\n"
+        )
+        print(message)
+
 # Execution
 #----------
 if __name__ == '__main__':
@@ -94,9 +130,13 @@ if __name__ == '__main__':
     # Check if args are empty
     empty_exec(args)
 
+    # Print summary
+    exec_info(args)
+
     # Call mode
     if args.func == "indiv":
-        indiv.init(read1=args.short_forward, read2=short_reverse, long=args.long, prefix=args.prefix, genus=args.genus, threads=args.threads) 
+        pass
+        indiv.init(read1=args.short_forward, read2=args.short_reverse, long=args.long, prefix=args.prefix, genus=args.genus, threads=args.threads, run_coverage=args.run_coverage) 
     elif args.func == "multi":
-        multi.init(samples=args.samples, threads=args.threads)
+        multi.init(samples=args.samples, threads=args.threads, run_coverage=args.run_coverage)
 
