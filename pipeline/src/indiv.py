@@ -12,9 +12,9 @@
 # Imports 
 # ---------------------------------------------------------------------------
 
-import json
 # External
 import os
+import json
 import subprocess
 
 # Internal
@@ -167,29 +167,51 @@ def init(read1, read2, long, prefix, genus, threads, run_coverage):
                 if os.path.exists(out_dir_yaml + '.submol.yml') and os.path.exists(out_dir_yaml + '.input.yml') and genus != "NA":
                     annotation.annotation(input_yaml=f"{out_dir_yaml}.input.yml", out_dir=f"50-Annotation/{prefix}/{software}", memory=4, threads=1,  conda_path=cpath)
 
-    if os.path.isdir(f"50-Annotation/{prefix}/{software}/annotation"):
-        a = f"50-Annotation/{prefix}/{software}/annotation/annot.gff"
-        try:
-            av = validation.validate_pgap(a)
-            if av == "Pass" and category == "Equal":
-                # Create folder
-                if not os.path.isdir("60-Genomes/Complete"): os.makedirs("60-Genomes/Complete")
-                
-                # Move assembly to Complete Genome
-                os.system(f"cp {assembly_folder}/{prefix}/unicycler/assembly.fasta 60-Genomes/Complete/{prefix}.assembly")
-                
-                # Remove assembly from Improved Genome
-                if os.path.exists(f"60-Genomes/Improved/{prefix}.assembly"): os.remove(f"60-Genomes/Improved/{prefix}.assembly.fasta")
-                
-            elif av == "Pass" and category == "Below":
-                # Create folder
-                if not os.path.isdir("60-Genomes/Improved"): os.makedirs("60-Genomes/Improved")
-                
-                # Move assembly to Improved Genome
-                os.system(f"cp {assembly_folder}/{prefix}/flye/assembly.fasta 60-Genomes/Improved/{prefix}.assembly.fasta")
-                
-        except:
-            if os.path.isdir(f"50-Annotation/{prefix}/annotation"):
-                pass
-				# print(f"{bcolors.FAIL}Error: {a} is missing or empty.{bcolors.ENDC}")
+            if os.path.isdir(f"50-Annotation/{prefix}/{software}/annotation"):
+                a = f"50-Annotation/{prefix}/{software}/annotation/annot.gff"
+                try:
+                    av = validation.validate_pgap(a)                
+                except:
+                    if os.path.isdir(f"50-Annotation/{prefix}/annotation"):
+                        pass
+                        # print(f"{bcolors.FAIL}Error: {a} is missing or empty.{bcolors.ENDC}")
+        elif bv == "Fail" or cv == "Fail":
+            # 16S genus identification
+            new_genus = taxonomy.taxonomy(assembly=f"{assembly_folder}/{prefix}/{software}/assembly.fasta")
 
+            if genus != new_genus and os.path.isdir(f"{assembly_folder}/{prefix}/{software}"):
+                out_dir_yaml = f"{assembly_folder}/{prefix}/{software}/{prefix}"
+                if not os.path.exists(out_dir_yaml + ".submol.yml") and not os.path.exists(out_dir_yaml + ".input.yml"):
+                    annotation.pgap_files_creator(genus = new_genus, assembly = f"{assembly_folder}/{prefix}/{software}/assembly.fasta", out_dir = out_dir_yaml)
+                    
+                if os.path.exists(out_dir_yaml + '.submol.yml') and os.path.exists(out_dir_yaml + '.input.yml') and genus != "NA":
+                    annotation.annotation(input_yaml=f"{out_dir_yaml}.input.yml", out_dir=f"50-Annotation/{prefix}/{software}", memory=4, threads=1,  conda_path=cpath)
+
+                if os.path.isdir(f"50-Annotation/{prefix}/{software}/annotation"):
+                    a = f"50-Annotation/{prefix}/{software}/annotation/annot.gff"
+                    try:
+                        av = validation.validate_pgap(a)
+                    except:
+                        if os.path.isdir(f"50-Annotation/{prefix}/annotation"):
+                            pass
+                            # print(f"{bcolors.FAIL}Error: {a} is missing or empty.{bcolors.ENDC}")
+        else:
+            # Assembly did not pass
+            pass
+
+        # Organize genomes
+        if av == "Pass" and category == "Equal":
+            # Create folder
+            if not os.path.isdir("60-Genomes/Complete"): os.makedirs("60-Genomes/Complete")
+            
+            # Move assembly to Complete Genome
+            os.system(f"cp {assembly_folder}/{prefix}/unicycler/assembly.fasta 60-Genomes/Complete/{prefix}.assembly")
+            
+            # Remove assembly from Improved Genome
+            if os.path.exists(f"60-Genomes/Improved/{prefix}.assembly"): os.remove(f"60-Genomes/Improved/{prefix}.assembly.fasta")            
+        elif av == "Pass" and category == "Below":
+            # Create folder
+            if not os.path.isdir("60-Genomes/Improved"): os.makedirs("60-Genomes/Improved")
+            
+            # Move assembly to Improved Genome
+            os.system(f"cp {assembly_folder}/{prefix}/flye/assembly.fasta 60-Genomes/Improved/{prefix}.assembly.fasta")
