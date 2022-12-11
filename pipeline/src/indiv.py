@@ -16,10 +16,10 @@
 import os
 import json
 import subprocess
+import logging
 
 # Internal
 from src import annotation, assembly, correction, coverage, qc, validation
-
 
 # Functions
 def conda_path():
@@ -50,41 +50,63 @@ def check_contig_number(hybrid_assembly, nanopore_draft):
     else:
         return "Above" # Exit
 
-def init(read1, read2, long, prefix, genus, threads, run_coverage):
+def init(read1, read2, long, prefix, genus, threads, memory, run_coverage):
 
     # Conda path
     cpath = conda_path()[0]
 
+    # Logging
+    #if os.path.isdir("01-Logs") == False: os.makedirs("01-Logs")
+    #logging.basicConfig(filename=f'01-Logs/{prefix}.log', format='%(levelname)s:%(message)s', encoding='utf-8', level=logging.INFO)
+
     # QC
     #---
 
+    #logging.info('### QC ###')
+
     # Illumina QC
-    qc.qc_illumina(illumina_1=read1, illumina_2=read2, out_dir=f"01-QC/{prefix}/Illumina", threads=threads, conda_path=cpath)
+    r1qc=read1.split("/")[-1].replace(".fastq.gz","_fastqc.zip")
+    r2qc=read2.split("/")[-1].replace(".fastq.gz","_fastqc.zip")
+    if not os.path.exists(f"01-QC/{prefix}/Illumina/{r1qc}") or not os.path.exists(f"01-QC/{prefix}/Illumina/{r2qc}"):
+        qc.qc_illumina(illumina_1=read1, illumina_2=read2, out_dir=f"01-QC/{prefix}/Illumina", threads=threads, conda_path=cpath)
 
     # Nanopore QC
-    qc.qc_nanopore(nanopore=long, out_dir=f"01-QC/{prefix}", threads=threads, conda_path=cpath)
+    if not os.path.exists(f"01-QC/{prefix}/Nanopore/{prefix}_NanoStats.txt"):
+        qc.qc_nanopore(nanopore=long, out_dir=f"01-QC/{prefix}/Nanopore", threads=threads, conda_path=cpath)
     
     # Correction
     #-----------
+
+    #logging.info('### Illumina Correction ###')
 
     # Define Illumina correct output
     read_corr_1 = ".".join(read1.split("/")[-1].split(".")[:-2]) + ".fastq.00.0_0.cor.fastq.gz"
     read_corr_2 = ".".join(read2.split("/")[-1].split(".")[:-2]) + ".fastq.00.0_0.cor.fastq.gz"
 
     # Correct Illumina reads
-    correction.correct_illumina(illumina_1=read1, illumina_2=read2, illumina_corr_1=read_corr_1, illumina_corr_2=read_corr_2, out_dir=f"10-Correction/{prefix}", threads=threads, conda_path=cpath)
+    if not os.path.exists(f"10-Correction/{prefix}/Illumina/corrected/{read_corr_1}") or not os.path.exists(f"10-Correction/{prefix}/Illumina/corrected/{read_corr_2}"):
+        correction.correct_illumina(illumina_1=read1, illumina_2=read2, illumina_corr_1=read_corr_1, illumina_corr_2=read_corr_2, out_dir=f"10-Correction/{prefix}/Illumina", threads=threads, memory=memory, conda_path=cpath)
+
+    #logging.info('### Nanopore Correction ###')
 
     # Correct nanopore reads
-    correction.correct_nanopore(nanopore=long, illumina_corr=f"10-Correction/{prefix}/Illumina/corrected/illumina.corrected.fastq.gz", out_dir=f"10-Correction/{prefix}/Nanopore", threads=threads, conda_path=cpath)
+    if not os.path.exists(f"10-Correction/{prefix}/Nanopore/nanopore.corrected.fasta"):
+        correction.correct_nanopore(nanopore=long, illumina_corr=f"10-Correction/{prefix}/Illumina/corrected/illumina.corrected.fastq.gz", out_dir=f"10-Correction/{prefix}/Nanopore", threads=threads, conda_path=cpath)
 
     # Assembly
     #---------
 
+    #logging.info('### Nanopore Draft Assembly ###')
+
     # Nanopore draft (Flye)
-    assembly.flye_assembly(nanopore_corr=f"10-Correction/{prefix}/Nanopore/nanopore.corrected.fasta", out_dir=f"20-Assembly/{prefix}", threads=threads, conda_path=cpath)
+    if not os.path.exists(f"20-Assembly/{prefix}/flye/assembly.fasta"):
+        assembly.flye_assembly(nanopore_corr=f"10-Correction/{prefix}/Nanopore/nanopore.corrected.fasta", out_dir=f"20-Assembly/{prefix}/flye", threads=threads, conda_path=cpath)
+
+    #logging.info('### Hybrid Assembly ###')
 
     # Hybrid Assembly (Unicycler)
-    assembly.unicycler(assembly=f"20-Assembly/{prefix}/assembly.fasta", illumina_corr_1=read_corr_1, illumina_corr_2=read_corr_2, nanopore_corr=f"10-Correction/{prefix}/Nanopore/nanopore.corrected.fasta", out_dir=f"30-HybridAssembly/{prefix}/unicycler", threads=threads, conda_path=cpath)
+    if not os.path.exists(f"30-HybridAssembly/{prefix}/unicycler/assembly.fasta"):
+        assembly.unicycler(assembly=f"20-Assembly/{prefix}/flye/assembly.fasta", illumina_corr_1=f"10-Correction/{prefix}/Illumina/corrected/{read_corr_1}", illumina_corr_2=f"10-Correction/{prefix}/Illumina/corrected/{read_corr_2}", nanopore_corr=f"10-Correction/{prefix}/Nanopore/nanopore.corrected.fasta", out_dir=f"30-HybridAssembly/{prefix}/unicycler", threads=threads, conda_path=cpath)
 
     # Check contigs
     #--------------
@@ -125,7 +147,8 @@ def init(read1, read2, long, prefix, genus, threads, run_coverage):
     # Validation
     #-----------
     # Quast
-    validation.quast(assembly=f"{assembly_folder}/{prefix}/{software}/assembly.fasta", out_dir=f"{assembly_folder}/{prefix}/Quast", threads=threads, conda_path=cpath)
+    if not os.path.exists(f"{assembly_folder}/{prefix}/Quast/report.txt"):
+        validation.quast(assembly=f"{assembly_folder}/{prefix}/{software}/assembly.fasta", out_dir=f"{assembly_folder}/{prefix}/Quast", threads=threads, conda_path=cpath)
 
     # Assembly validation
     validation.assembly_validation(assembly=f"{assembly_folder}/{prefix}/{software}/assembly.fasta", database=genus, out_dir=f"40-Validation/{prefix}/{software}", threads=threads, conda_path=cpath)

@@ -13,7 +13,7 @@ def flye_assembly(nanopore_corr, out_dir, threads, conda_path):
 
 	# Flye
 	conda activate ha-flye
-	flye --nano-corr {nanopore_corr} --plasmids --out-dir {out_dir} --threads {threads}"
+	flye --nano-corr {nanopore_corr} --out-dir {out_dir} --threads {threads}"
 	'''.format(nanopore_corr=nanopore_corr, out_dir=out_dir, threads=threads, conda_path=conda_path)
 
 	subprocess.check_call(cmd, shell=True)

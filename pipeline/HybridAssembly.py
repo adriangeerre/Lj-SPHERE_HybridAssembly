@@ -56,6 +56,7 @@ def params():
     parser_indiv.add_argument('-g', '--genus', dest='genus', action='store', help='Genus', required=True)
     parser_indiv.add_argument('-rc', '--run-coverage', dest='run_coverage', action='store', help='Compute and plot Illumina and/or Nanopore coverage against assembly default: %(default)s)', default=False, type=bool)
     parser_indiv.add_argument('-t', '--threads', dest='threads', action='store', help='Threads (default: %(default)s)', default=1, type=int)
+    parser_indiv.add_argument('-m', '--memory', dest='memory', action='store', help='Memory (default: %(default)s GB)', default=8, type=int)
     #parser_indiv.add_argument('-f', '--force', dest='boolean', action='store', help='Force recomputation', choices=['True','False'], default=False)
 
     parser_indiv.set_defaults(func="indiv")
@@ -64,6 +65,7 @@ def params():
     parser_multi.add_argument('-l', '--list-samples', dest='samples', action='store', help='List of samples (process multiples samples)', required=True)
     parser_multi.add_argument('-rc', '--run-coverage', dest='run_coverage', action='store', help='Compute and plot Illumina and/or Nanopore coverage against assembly default: %(default)s)', default=False, type=bool)
     parser_multi.add_argument('-t', '--threads', dest='threads', action='store', help='Threads (default: %(default)s)', default=1, type=int)
+    parser_multi.add_argument('-m', '--memory', dest='memory', action='store', help='Memory (default: %(default)s GB)', default=4, type=int)
     #parser_multi.add_argument('-f', '--force', dest='boolean', action='store', help='Force recomputation', choices=['True','False'], default=False)
 
     parser_multi.set_defaults(func="multi")
@@ -88,7 +90,6 @@ def empty_exec(args):
 def exec_info(args):
     # Define longest argument value
     maxlen = max([len(str(i)) for i in vars(args).values()])
-    print(maxlen)
 
     if args.func == "indiv":
         maxlen += 14
@@ -101,6 +102,7 @@ def exec_info(args):
         f"{' '*2}Prefix: {args.prefix}\n"
         f"{' '*2}Genus: {args.genus}\n"
         f"{' '*2}Threads: {args.threads}\n"
+        f"{' '*2}Memory: {args.memory}\n"
         f"{' '*2}Run Coverage: {args.run_coverage}\n"
         f"\n{'-'*maxlen}\n"
         )
@@ -112,6 +114,7 @@ def exec_info(args):
             f"\nSummary\n"
             f"{' '*2}Sample files: {args.samples}\n"
             f"{' '*2}Threads: {args.threads}\n"
+            f"{' '*2}Memory: {args.memory}\n"
             f"{' '*2}Run Coverage: {args.run_coverage}\n"
             f"\n{'-'*maxlen}\n"
         )
@@ -136,7 +139,7 @@ if __name__ == '__main__':
     # Call mode
     if args.func == "indiv":
         pass
-        indiv.init(read1=args.short_forward, read2=args.short_reverse, long=args.long, prefix=args.prefix, genus=args.genus, threads=args.threads, run_coverage=args.run_coverage) 
+        indiv.init(read1=args.short_forward, read2=args.short_reverse, long=args.long, prefix=args.prefix, genus=args.genus, threads=args.threads, memory=args.memory, run_coverage=args.run_coverage) 
     elif args.func == "multi":
-        multi.init(samples=args.samples, threads=args.threads, run_coverage=args.run_coverage)
+        multi.init(sample_file=args.samples, threads=args.threads, memory=args.memory, run_coverage=args.run_coverage)
 
