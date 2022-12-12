@@ -98,7 +98,7 @@ def validate_pgap(gff):
 		return "Failed"
 
 # Quast
-def quast(assembly, out_dir, threads, conda_path):
+def quast(assembly, out_dir, threads, conda_path, logfile):
 	# Folder structure
 	if os.path.isdir(out_dir) == False: os.makedirs(out_dir)
 
@@ -112,10 +112,13 @@ def quast(assembly, out_dir, threads, conda_path):
 	quast -o {out_dir} -t {threads} {assembly}"
 	'''.format(assembly=assembly, out_dir=out_dir, threads=threads, conda_path=conda_path)
 
-	subprocess.check_call(cmd, shell=True)
+	# Exec and log
+	f = open(logfile, "w")
+	subprocess.check_call(cmd, shell=True, stdout=f, stderr=f)
+	f.close()
 
 # Validation
-def assembly_validation(assembly, database, out_dir, threads, conda_path):
+def assembly_validation(assembly, database, out_dir, threads, conda_path, logfile):
 	# Folder structure
 	if os.path.isdir(out_dir) == False: os.makedirs(out_dir)
 
@@ -133,4 +136,7 @@ def assembly_validation(assembly, database, out_dir, threads, conda_path):
 	checkm qa {out_dir}/CheckM/lineage.ms {out_dir}/CheckM -f {out_dir}/CheckM/results.tsv --tab_table -t {threads}"
 	'''.format(assembly=assembly, assembly_folder=assembly.strip("assembly.fasta"), database=database, out_dir=out_dir, threads=threads, conda_path=conda_path)
 
-	subprocess.check_call(cmd, shell=True)
+	# Exec and log
+	f = open(logfile, "w")
+	subprocess.check_call(cmd, shell=True, stdout=f, stderr=f)
+	f.close()

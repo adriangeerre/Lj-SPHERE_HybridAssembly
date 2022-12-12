@@ -3,7 +3,7 @@ import os
 import subprocess
 
 # Flye
-def flye_assembly(nanopore_corr, out_dir, threads, conda_path):
+def flye_assembly(nanopore_corr, out_dir, threads, conda_path, logfile):
 	# Folder structure
 	if os.path.isdir(out_dir) == False: os.makedirs(out_dir)
 
@@ -16,10 +16,13 @@ def flye_assembly(nanopore_corr, out_dir, threads, conda_path):
 	flye --nano-corr {nanopore_corr} --out-dir {out_dir} --threads {threads}"
 	'''.format(nanopore_corr=nanopore_corr, out_dir=out_dir, threads=threads, conda_path=conda_path)
 
-	subprocess.check_call(cmd, shell=True)
+	# Exec and log
+	f = open(logfile, "w")
+	subprocess.check_call(cmd, shell=True, stdout=f, stderr=f)
+	f.close()
 
 # Unicycler
-def unicycler(assembly, illumina_corr_1, illumina_corr_2, nanopore_corr, out_dir, threads, conda_path):
+def unicycler(assembly, illumina_corr_1, illumina_corr_2, nanopore_corr, out_dir, threads, conda_path, logfile):
 	# Folder structure
 	if os.path.isdir(out_dir) == False: os.makedirs(out_dir)
 
@@ -32,5 +35,8 @@ def unicycler(assembly, illumina_corr_1, illumina_corr_2, nanopore_corr, out_dir
 	unicycler -1 {illumina_corr_1} -2 {illumina_corr_2} --existing_long_read_assembly {assembly} -l {nanopore_corr} --threads {threads} --keep 2 --verbosity 2 -o {out_dir}"
 	'''.format(assembly=assembly, illumina_corr_1=illumina_corr_1, illumina_corr_2=illumina_corr_2, nanopore_corr=nanopore_corr, out_dir=out_dir, threads=threads, conda_path=conda_path)
 
-	subprocess.check_call(cmd, shell=True)
+	# Exec and log
+	f = open(logfile, "w")
+	subprocess.check_call(cmd, shell=True, stdout=f, stderr=f)
+	f.close()
 

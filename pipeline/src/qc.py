@@ -3,7 +3,7 @@ import os
 import subprocess
 
 # Fastqc
-def qc_illumina(illumina_1, illumina_2, out_dir, threads, conda_path):
+def qc_illumina(illumina_1, illumina_2, out_dir, threads, conda_path, logfile):
 	# Folder structure
 	if os.path.isdir(out_dir) == False: os.makedirs(out_dir)
 
@@ -17,10 +17,13 @@ def qc_illumina(illumina_1, illumina_2, out_dir, threads, conda_path):
 	fastqc -t {threads} -o {out_dir} {illumina_1} {illumina_2}"
 	'''.format(illumina_1=illumina_1, illumina_2=illumina_2, out_dir=out_dir, threads=threads, conda_path=conda_path)
 
-	subprocess.check_call(cmd, shell=True)
+	# Exec and log
+	f = open(logfile, "w")
+	subprocess.check_call(cmd, shell=True, stdout=f, stderr=f)
+	f.close()
 
 # NanoPlot
-def qc_nanopore(nanopore, out_dir, threads, conda_path):
+def qc_nanopore(nanopore, out_dir, threads, conda_path, logfile):
 	# Folder structure
 	if os.path.isdir(out_dir) == False: os.makedirs(out_dir)
 
@@ -33,4 +36,7 @@ def qc_nanopore(nanopore, out_dir, threads, conda_path):
 	NanoPlot -o {out_dir} -p {prefix} --info_in_report --N50 --title {title} --fastq {nanopore} --threads {threads}"
 	'''.format(nanopore=nanopore, out_dir=out_dir, prefix=".".join(nanopore.split("/")[-1].split(".")[:-2]) + "_", title=nanopore.split("/")[-1], threads=threads, conda_path=conda_path)
 
-	subprocess.check_call(cmd, shell=True)
+	# Exec and log
+	f = open(logfile, "w")
+	subprocess.check_call(cmd, shell=True, stdout=f, stderr=f)
+	f.close()

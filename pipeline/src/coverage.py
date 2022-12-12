@@ -3,7 +3,7 @@ import os
 import subprocess
 
 # Alignment Illumina
-def align_illumina(assembly, illumina_corr_1, illumina_corr_2, out_dir, threads, conda_path):
+def align_illumina(assembly, illumina_corr_1, illumina_corr_2, out_dir, threads, conda_path, logfile):
 	# Folder structure
 	if os.path.isdir(out_dir) == False: os.makedirs(out_dir)
 
@@ -23,10 +23,13 @@ def align_illumina(assembly, illumina_corr_1, illumina_corr_2, out_dir, threads,
 	rm {out_dir}/Illumina.sam {out_dir}/Illumina.bam"
 	'''.format(assembly=assembly, illumina_corr_1=illumina_corr_1, illumina_corr_2=illumina_corr_2, in_dir='/'.join(assembly.split("/")[:-1]), out_dir=out_dir, threads=threads, conda_path=conda_path)
 
-	subprocess.check_call(cmd, shell=True)
+	# Exec and log
+	f = open(logfile, "w")
+	subprocess.check_call(cmd, shell=True, stdout=f, stderr=f)
+	f.close()
 
 # Alignment Nanopore
-def align_nanopore(assembly, nanopore_corr, out_dir, threads, conda_path):
+def align_nanopore(assembly, nanopore_corr, out_dir, threads, conda_path, logfile):
 	# Folder structure
 	if os.path.isdir(out_dir) == False: os.makedirs(out_dir)
 
@@ -44,10 +47,13 @@ def align_nanopore(assembly, nanopore_corr, out_dir, threads, conda_path):
 	rm {out_dir}/Nanopore.sam {out_dir}/Nanopore.bam"
 	'''.format(assembly=assembly, nanopore_corr=nanopore_corr, out_dir=out_dir, threads=threads, conda_path=conda_path)
 
-	subprocess.check_call(cmd, shell=True)
+	# Exec and log
+	f = open(logfile, "w")
+	subprocess.check_call(cmd, shell=True, stdout=f, stderr=f)
+	f.close()
 
 # Coverage
-def coverage(in_dir, out_dir, conda_path):
+def coverage(in_dir, out_dir, conda_path, logfile):
 	# Folder structure
 	if os.path.isdir(out_dir) == False: os.makedirs(out_dir)
 
@@ -61,10 +67,13 @@ def coverage(in_dir, out_dir, conda_path):
 	bedtools genomecov -d -ibam {in_dir}/Nanopore.sort.bam > {out_dir}/Nanopore.cov"
 	'''.format(in_dir=in_dir, out_dir=out_dir, conda_path=conda_path)
 
-	subprocess.check_call(cmd, shell=True)
+	# Exec and log
+	f = open(logfile, "w")
+	subprocess.check_call(cmd, shell=True, stdout=f, stderr=f)
+	f.close()
 
 # Plot Coverage
-def plot_coverage(in_dir, out_dir, prefix, conda_path):
+def plot_coverage(in_dir, out_dir, prefix, conda_path, logfile):
 	# Folder structure
 	if os.path.isdir(out_dir) == False: os.makedirs(out_dir)
 
@@ -83,4 +92,7 @@ def plot_coverage(in_dir, out_dir, prefix, conda_path):
 	Rscript src/coverage.R -i {in_dir} -o {out_dir}"
 	'''.format(in_dir=in_dir, out_dir=out_dir, conda_path=conda_path)
 
-	subprocess.check_call(cmd, shell=True)
+	# Exec and log
+	f = open(logfile, "w")
+	subprocess.check_call(cmd, shell=True, stdout=f, stderr=f)
+	f.close()

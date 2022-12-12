@@ -56,23 +56,23 @@ def init(read1, read2, long, prefix, genus, threads, memory, run_coverage):
     cpath = conda_path()[0]
 
     # Logging
-    #if os.path.isdir("01-Logs") == False: os.makedirs("01-Logs")
-    #logging.basicConfig(filename=f'01-Logs/{prefix}.log', format='%(levelname)s:%(message)s', encoding='utf-8', level=logging.INFO)
+    if os.path.isdir("01-Logs") == False: os.makedirs("01-Logs")
+    logging.basicConfig(filename=f'01-Logs/{prefix}.log', format='%(levelname)s:%(message)s', encoding='utf-8', level=logging.INFO)
 
     # QC
     #---
 
-    #logging.info('### QC ###')
+    logging.info('QC:')
 
     # Illumina QC
     r1qc=read1.split("/")[-1].replace(".fastq.gz","_fastqc.zip")
     r2qc=read2.split("/")[-1].replace(".fastq.gz","_fastqc.zip")
     if not os.path.exists(f"01-QC/{prefix}/Illumina/{r1qc}") or not os.path.exists(f"01-QC/{prefix}/Illumina/{r2qc}"):
-        qc.qc_illumina(illumina_1=read1, illumina_2=read2, out_dir=f"01-QC/{prefix}/Illumina", threads=threads, conda_path=cpath)
+        qc.qc_illumina(illumina_1=read1, illumina_2=read2, out_dir=f"01-QC/{prefix}/Illumina", threads=threads, conda_path=cpath, logfile=f"01-Logs/{prefix}.log")
 
     # Nanopore QC
     if not os.path.exists(f"01-QC/{prefix}/Nanopore/{prefix}_NanoStats.txt"):
-        qc.qc_nanopore(nanopore=long, out_dir=f"01-QC/{prefix}/Nanopore", threads=threads, conda_path=cpath)
+        qc.qc_nanopore(nanopore=long, out_dir=f"01-QC/{prefix}/Nanopore", threads=threads, conda_path=cpath, logfile=f"01-Logs/{prefix}.log")
     
     # Correction
     #-----------
@@ -85,28 +85,28 @@ def init(read1, read2, long, prefix, genus, threads, memory, run_coverage):
 
     # Correct Illumina reads
     if not os.path.exists(f"10-Correction/{prefix}/Illumina/corrected/{read_corr_1}") or not os.path.exists(f"10-Correction/{prefix}/Illumina/corrected/{read_corr_2}"):
-        correction.correct_illumina(illumina_1=read1, illumina_2=read2, illumina_corr_1=read_corr_1, illumina_corr_2=read_corr_2, out_dir=f"10-Correction/{prefix}/Illumina", threads=threads, memory=memory, conda_path=cpath)
+        correction.correct_illumina(illumina_1=read1, illumina_2=read2, illumina_corr_1=read_corr_1, illumina_corr_2=read_corr_2, out_dir=f"10-Correction/{prefix}/Illumina", threads=threads, memory=memory, conda_path=cpath, logfile=f"01-Logs/{prefix}.log")
 
-    #logging.info('### Nanopore Correction ###')
+    logging.info('Nanopore Correction:')
 
     # Correct nanopore reads
     if not os.path.exists(f"10-Correction/{prefix}/Nanopore/nanopore.corrected.fasta"):
-        correction.correct_nanopore(nanopore=long, illumina_corr=f"10-Correction/{prefix}/Illumina/corrected/illumina.corrected.fastq.gz", out_dir=f"10-Correction/{prefix}/Nanopore", threads=threads, conda_path=cpath)
+        correction.correct_nanopore(nanopore=long, illumina_corr=f"10-Correction/{prefix}/Illumina/corrected/illumina.corrected.fastq.gz", out_dir=f"10-Correction/{prefix}/Nanopore", threads=threads, conda_path=cpath, logfile=f"01-Logs/{prefix}.log")
 
     # Assembly
     #---------
 
-    #logging.info('### Nanopore Draft Assembly ###')
+    logging.info('Nanopore Draft Assembly:')
 
     # Nanopore draft (Flye)
     if not os.path.exists(f"20-Assembly/{prefix}/flye/assembly.fasta"):
-        assembly.flye_assembly(nanopore_corr=f"10-Correction/{prefix}/Nanopore/nanopore.corrected.fasta", out_dir=f"20-Assembly/{prefix}/flye", threads=threads, conda_path=cpath)
+        assembly.flye_assembly(nanopore_corr=f"10-Correction/{prefix}/Nanopore/nanopore.corrected.fasta", out_dir=f"20-Assembly/{prefix}/flye", threads=threads, conda_path=cpath, logfile=f"01-Logs/{prefix}.log")
 
-    #logging.info('### Hybrid Assembly ###')
+    logging.info('Hybrid Assembly:')
 
     # Hybrid Assembly (Unicycler)
     if not os.path.exists(f"30-HybridAssembly/{prefix}/unicycler/assembly.fasta"):
-        assembly.unicycler(assembly=f"20-Assembly/{prefix}/flye/assembly.fasta", illumina_corr_1=f"10-Correction/{prefix}/Illumina/corrected/{read_corr_1}", illumina_corr_2=f"10-Correction/{prefix}/Illumina/corrected/{read_corr_2}", nanopore_corr=f"10-Correction/{prefix}/Nanopore/nanopore.corrected.fasta", out_dir=f"30-HybridAssembly/{prefix}/unicycler", threads=threads, conda_path=cpath)
+        assembly.unicycler(assembly=f"20-Assembly/{prefix}/flye/assembly.fasta", illumina_corr_1=f"10-Correction/{prefix}/Illumina/corrected/{read_corr_1}", illumina_corr_2=f"10-Correction/{prefix}/Illumina/corrected/{read_corr_2}", nanopore_corr=f"10-Correction/{prefix}/Nanopore/nanopore.corrected.fasta", out_dir=f"30-HybridAssembly/{prefix}/unicycler", threads=threads, conda_path=cpath, logfile=f"01-Logs/{prefix}.log")
 
     # Check contigs
     #--------------
@@ -133,25 +133,25 @@ def init(read1, read2, long, prefix, genus, threads, memory, run_coverage):
     
     if run_coverage == True: # Define title for Draft or HA
         # Align illumina
-        coverage.align_illumina(assembly=f"{assembly_folder}/{prefix}/{software}/assembly.fasta", illumina_corr_1=read_corr_1, illumina_corr_2=read_corr_2, out_dir=f"{assembly_folder}/{prefix}/Align", threads=threads, conda_path=cpath)
+        coverage.align_illumina(assembly=f"{assembly_folder}/{prefix}/{software}/assembly.fasta", illumina_corr_1=read_corr_1, illumina_corr_2=read_corr_2, out_dir=f"{assembly_folder}/{prefix}/Align", threads=threads, conda_path=cpath, logfile=f"01-Logs/{prefix}.log")
 
         # Align nanopore
-        coverage.align_nanopore(assembly=f"{assembly_folder}/{prefix}/{software}/assembly.fasta", nanopore_corr=f"10-Correction/{prefix}/Nanopore/nanopore.corrected.fasta", out_dir=f"{assembly_folder}/{prefix}/Align", threads=threads, conda_path=cpath)
+        coverage.align_nanopore(assembly=f"{assembly_folder}/{prefix}/{software}/assembly.fasta", nanopore_corr=f"10-Correction/{prefix}/Nanopore/nanopore.corrected.fasta", out_dir=f"{assembly_folder}/{prefix}/Align", threads=threads, conda_path=cpath, logfile=f"01-Logs/{prefix}.log")
         
         # Obtain coverage
-        coverage.coverage(in_dir="{assembly_folder}/{prefix}/Align", out_dir=f"{assembly_folder}/{prefix}/Coverage", conda_path=cpath)
+        coverage.coverage(in_dir="{assembly_folder}/{prefix}/Align", out_dir=f"{assembly_folder}/{prefix}/Coverage", conda_path=cpath, logfile=f"01-Logs/{prefix}.log")
 
         # Plot coverage
-        coverage.plot_coverage(in_dir=f"{assembly_folder}/{prefix}/Align", out_dir=f"{assembly_folder}/{prefix}/Coverage/CovPlots", prefix=prefix, conda_path=cpath)
+        coverage.plot_coverage(in_dir=f"{assembly_folder}/{prefix}/Align", out_dir=f"{assembly_folder}/{prefix}/Coverage/CovPlots", prefix=prefix, conda_path=cpath, logfile=f"01-Logs/{prefix}.log")
 
     # Validation
     #-----------
     # Quast
     if not os.path.exists(f"{assembly_folder}/{prefix}/Quast/report.txt"):
-        validation.quast(assembly=f"{assembly_folder}/{prefix}/{software}/assembly.fasta", out_dir=f"{assembly_folder}/{prefix}/Quast", threads=threads, conda_path=cpath)
+        validation.quast(assembly=f"{assembly_folder}/{prefix}/{software}/assembly.fasta", out_dir=f"{assembly_folder}/{prefix}/Quast", threads=threads, conda_path=cpath, logfile=f"01-Logs/{prefix}.log")
 
     # Assembly validation
-    validation.assembly_validation(assembly=f"{assembly_folder}/{prefix}/{software}/assembly.fasta", database=genus, out_dir=f"40-Validation/{prefix}/{software}", threads=threads, conda_path=cpath)
+    validation.assembly_validation(assembly=f"{assembly_folder}/{prefix}/{software}/assembly.fasta", database=genus, out_dir=f"40-Validation/{prefix}/{software}", threads=threads, conda_path=cpath, logfile=f"01-Logs/{prefix}.log")
 
     # Check validation
     #-----------------
@@ -188,7 +188,7 @@ def init(read1, read2, long, prefix, genus, threads, memory, run_coverage):
                     annotation.pgap_files_creator(genus = genus, assembly = f"{assembly_folder}/{prefix}/{software}/assembly.fasta", out_dir = out_dir_yaml)
                     
                 if os.path.exists(out_dir_yaml + '.submol.yml') and os.path.exists(out_dir_yaml + '.input.yml') and genus != "NA":
-                    annotation.annotation(input_yaml=f"{out_dir_yaml}.input.yml", out_dir=f"50-Annotation/{prefix}/{software}", memory=4, threads=1,  conda_path=cpath)
+                    annotation.annotation(input_yaml=f"{out_dir_yaml}.input.yml", out_dir=f"50-Annotation/{prefix}/{software}", memory=4, threads=1,  conda_path=cpath, logfile=f"01-Logs/{prefix}.log")
 
             if os.path.isdir(f"50-Annotation/{prefix}/{software}/annotation"):
                 a = f"50-Annotation/{prefix}/{software}/annotation/annot.gff"
@@ -199,8 +199,10 @@ def init(read1, read2, long, prefix, genus, threads, memory, run_coverage):
                         pass
                         # print(f"{bcolors.FAIL}Error: {a} is missing or empty.{bcolors.ENDC}")
         elif bv == "Fail" or cv == "Fail":
+            pass
+
             # 16S genus identification
-            new_genus = taxonomy.taxonomy(assembly=f"{assembly_folder}/{prefix}/{software}/assembly.fasta")
+            #new_genus = taxonomy.taxonomy(assembly=f"{assembly_folder}/{prefix}/{software}/assembly.fasta")
 
             if genus != new_genus and os.path.isdir(f"{assembly_folder}/{prefix}/{software}"):
                 out_dir_yaml = f"{assembly_folder}/{prefix}/{software}/{prefix}"
@@ -208,7 +210,7 @@ def init(read1, read2, long, prefix, genus, threads, memory, run_coverage):
                     annotation.pgap_files_creator(genus = new_genus, assembly = f"{assembly_folder}/{prefix}/{software}/assembly.fasta", out_dir = out_dir_yaml)
                     
                 if os.path.exists(out_dir_yaml + '.submol.yml') and os.path.exists(out_dir_yaml + '.input.yml') and genus != "NA":
-                    annotation.annotation(input_yaml=f"{out_dir_yaml}.input.yml", out_dir=f"50-Annotation/{prefix}/{software}", memory=4, threads=1,  conda_path=cpath)
+                    annotation.annotation(input_yaml=f"{out_dir_yaml}.input.yml", out_dir=f"50-Annotation/{prefix}/{software}", memory=4, threads=1,  conda_path=cpath, logfile=f"01-Logs/{prefix}.log")
 
                 if os.path.isdir(f"50-Annotation/{prefix}/{software}/annotation"):
                     a = f"50-Annotation/{prefix}/{software}/annotation/annot.gff"
