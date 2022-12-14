@@ -18,7 +18,7 @@ def qc_illumina(illumina_1, illumina_2, out_dir, threads, conda_path, logfile):
 	'''.format(illumina_1=illumina_1, illumina_2=illumina_2, out_dir=out_dir, threads=threads, conda_path=conda_path)
 
 	# Exec and log
-	f = open(logfile, "w")
+	f = open(logfile, "a")
 	subprocess.check_call(cmd, shell=True, stdout=f, stderr=f)
 	f.close()
 
@@ -37,6 +37,6 @@ def qc_nanopore(nanopore, out_dir, threads, conda_path, logfile):
 	'''.format(nanopore=nanopore, out_dir=out_dir, prefix=".".join(nanopore.split("/")[-1].split(".")[:-2]) + "_", title=nanopore.split("/")[-1], threads=threads, conda_path=conda_path)
 
 	# Exec and log
-	f = open(logfile, "w")
+	f = open(logfile, "a")
 	subprocess.check_call(cmd, shell=True, stdout=f, stderr=f)
 	f.close()

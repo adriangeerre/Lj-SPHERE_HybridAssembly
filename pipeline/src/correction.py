@@ -18,7 +18,7 @@ def correct_illumina(illumina_1, illumina_2, illumina_corr_1, illumina_corr_2, o
 	'''.format(illumina_1=illumina_1, illumina_2=illumina_2, illumina_corr_1=illumina_corr_1, illumina_corr_2=illumina_corr_2, out_dir=out_dir, threads=threads, memory=memory, conda_path=conda_path)
 
 	# Exec and log
-	f = open(logfile, "w")
+	f = open(logfile, "a")
 	subprocess.check_call(cmd, shell=True, stdout=f, stderr=f)
 	f.close()
 
@@ -39,6 +39,6 @@ def correct_nanopore(nanopore, illumina_corr, out_dir, threads, conda_path, logf
 	'''.format(nanopore=nanopore, illumina_corr=illumina_corr, out_dir=out_dir, threads=threads, conda_path=conda_path)
 
 	# Exec and log
-	f = open(logfile, "w")
+	f = open(logfile, "a")
 	subprocess.check_call(cmd, shell=True, stdout=f, stderr=f)
 	f.close()

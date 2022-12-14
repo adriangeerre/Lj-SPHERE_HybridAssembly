@@ -24,7 +24,7 @@ def align_illumina(assembly, illumina_corr_1, illumina_corr_2, out_dir, threads,
 	'''.format(assembly=assembly, illumina_corr_1=illumina_corr_1, illumina_corr_2=illumina_corr_2, in_dir='/'.join(assembly.split("/")[:-1]), out_dir=out_dir, threads=threads, conda_path=conda_path)
 
 	# Exec and log
-	f = open(logfile, "w")
+	f = open(logfile, "a")
 	subprocess.check_call(cmd, shell=True, stdout=f, stderr=f)
 	f.close()
 
@@ -48,7 +48,7 @@ def align_nanopore(assembly, nanopore_corr, out_dir, threads, conda_path, logfil
 	'''.format(assembly=assembly, nanopore_corr=nanopore_corr, out_dir=out_dir, threads=threads, conda_path=conda_path)
 
 	# Exec and log
-	f = open(logfile, "w")
+	f = open(logfile, "a")
 	subprocess.check_call(cmd, shell=True, stdout=f, stderr=f)
 	f.close()
 
@@ -68,7 +68,7 @@ def coverage(in_dir, out_dir, conda_path, logfile):
 	'''.format(in_dir=in_dir, out_dir=out_dir, conda_path=conda_path)
 
 	# Exec and log
-	f = open(logfile, "w")
+	f = open(logfile, "a")
 	subprocess.check_call(cmd, shell=True, stdout=f, stderr=f)
 	f.close()
 
@@ -93,6 +93,6 @@ def plot_coverage(in_dir, out_dir, prefix, conda_path, logfile):
 	'''.format(in_dir=in_dir, out_dir=out_dir, conda_path=conda_path)
 
 	# Exec and log
-	f = open(logfile, "w")
+	f = open(logfile, "a")
 	subprocess.check_call(cmd, shell=True, stdout=f, stderr=f)
 	f.close()

@@ -44,7 +44,7 @@ def read_file(sample_file):
         for row in f:
             if row[0] != "#":
                 row = row.strip().split("\t")
-                if len(row) >= 6:
+                if len(row) >= 7:
                     samples.append(row)
         f.close()
 
@@ -61,7 +61,7 @@ def init(sample_file, threads, memory, run_coverage):
     # Loop samples
     for sample in samples:
         try:
-            indiv.init(read1=sample[0], read2=sample[1], long=sample[2], prefix=sample[3], genus=sample[4], threads=threads, memory=memory, run_coverage=run_coverage)
+            indiv.init(read1=sample[0], read2=sample[1], long=sample[2], prefix=sample[3], order=sample[4], genus=sample[5], threads=threads, memory=memory, run_coverage=run_coverage)
         except:
             print(f"{bcolors.WARNING}Warning: {sample[0]} computation failed.{bcolors.ENDC}\n")
             continue

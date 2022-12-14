@@ -17,7 +17,7 @@ def flye_assembly(nanopore_corr, out_dir, threads, conda_path, logfile):
 	'''.format(nanopore_corr=nanopore_corr, out_dir=out_dir, threads=threads, conda_path=conda_path)
 
 	# Exec and log
-	f = open(logfile, "w")
+	f = open(logfile, "a")
 	subprocess.check_call(cmd, shell=True, stdout=f, stderr=f)
 	f.close()
 
@@ -36,7 +36,7 @@ def unicycler(assembly, illumina_corr_1, illumina_corr_2, nanopore_corr, out_dir
 	'''.format(assembly=assembly, illumina_corr_1=illumina_corr_1, illumina_corr_2=illumina_corr_2, nanopore_corr=nanopore_corr, out_dir=out_dir, threads=threads, conda_path=conda_path)
 
 	# Exec and log
-	f = open(logfile, "w")
+	f = open(logfile, "a")
 	subprocess.check_call(cmd, shell=True, stdout=f, stderr=f)
 	f.close()
 

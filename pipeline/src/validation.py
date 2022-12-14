@@ -102,8 +102,7 @@ def quast(assembly, out_dir, threads, conda_path, logfile):
 	# Folder structure
 	if os.path.isdir(out_dir) == False: os.makedirs(out_dir)
 
-	cmd='''
-	/bin/bash -c "
+	cmd='''/bin/bash -c "
 	# Source conda to work with environments
 	source {conda_path}/etc/profile.d/conda.sh
 
@@ -113,7 +112,7 @@ def quast(assembly, out_dir, threads, conda_path, logfile):
 	'''.format(assembly=assembly, out_dir=out_dir, threads=threads, conda_path=conda_path)
 
 	# Exec and log
-	f = open(logfile, "w")
+	f = open(logfile, "a")
 	subprocess.check_call(cmd, shell=True, stdout=f, stderr=f)
 	f.close()
 
@@ -137,6 +136,6 @@ def assembly_validation(assembly, database, out_dir, threads, conda_path, logfil
 	'''.format(assembly=assembly, assembly_folder=assembly.strip("assembly.fasta"), database=database, out_dir=out_dir, threads=threads, conda_path=conda_path)
 
 	# Exec and log
-	f = open(logfile, "w")
+	f = open(logfile, "a")
 	subprocess.check_call(cmd, shell=True, stdout=f, stderr=f)
 	f.close()
