@@ -169,7 +169,7 @@ def init(read1, read2, long, prefix, order, genus, threads, memory, run_coverage
     if os.path.isdir(f"40-Validation/{prefix}/{software}/Busco"):
         try:
             bha = [i for i in os.listdir(f"40-Validation/{prefix}/{software}/Busco") if i[-5:] == ".json"][0]
-            bfha = open(f"40-Validation/{prefix}/{software}Busco/{bha}")
+            bfha = open(f"40-Validation/{prefix}/{software}/Busco/{bha}")
             bdha = json.load(bfha)
             bvha = validation.validate_busco(bdha)
             bfha.close()
@@ -190,7 +190,7 @@ def init(read1, read2, long, prefix, order, genus, threads, memory, run_coverage
 
     # Annotation
     #-----------
-    if "bvha" in globals() and "cvha" in globals():
+    if "bvha" in locals() and "cvha" in locals():
         if bvha == "Pass" and cvha == "Pass":
             logger.info('**** Hybrid Assembly annotation: PGAP ****')
 
@@ -200,7 +200,7 @@ def init(read1, read2, long, prefix, order, genus, threads, memory, run_coverage
                 if not os.path.exists(out_dir_yaml + ".submol.yml") and not os.path.exists(out_dir_yaml + ".input.yml"):
                     annotation.pgap_files_creator(genus = genus, assembly = f"{assembly_folder}/{prefix}/{software}/assembly.fasta", out_dir = out_dir_yaml)
                     
-                if os.path.exists(out_dir_yaml + '.submol.yml') and os.path.exists(out_dir_yaml + '.input.yml') and genus != "NA":
+                if os.path.exists(out_dir_yaml + '.submol.yml') and os.path.exists(out_dir_yaml + '.input.yml') and genus != "NA" and not os.path.isdir(f'50-Annotation/{prefix}/{software}/annotation'):
                     annotation.annotation(input_yaml=f"{out_dir_yaml}.input.yml", out_dir=f"50-Annotation/{prefix}/{software}", memory=4, threads=1,  conda_path=cpath, logfile=f".logs/{prefix}.log")
 
             # Validate Hybrid Assembly annotation
@@ -214,7 +214,7 @@ def init(read1, read2, long, prefix, order, genus, threads, memory, run_coverage
                         pass
 
             # Complete Genome
-            if "avha" in globals():
+            if "avha" in locals():
                 if avha == "Pass":
                     # Create folder
                     if not os.path.isdir("60-Genomes/Complete"): os.makedirs("60-Genomes/Complete")
@@ -281,7 +281,7 @@ def init(read1, read2, long, prefix, order, genus, threads, memory, run_coverage
                     pass
 
             # Annotation
-            if "bvd" in globals() and "cvd" in globals():
+            if "bvd" in locals() and "cvd" in locals():
                 if bvd == "Pass" and cvd == "Pass":
                     logger.info('**** Draft Assembly annotation: PGAP ****')
 
@@ -305,7 +305,7 @@ def init(read1, read2, long, prefix, order, genus, threads, memory, run_coverage
                                 pass
                     
                     # Improved Genome
-                    if "avd" in globals():
+                    if "avd" in locals():
                         if avd == "Pass":
                             # Create folder
                             if not os.path.isdir("60-Genomes/Improved"): os.makedirs("60-Genomes/Improved")
@@ -330,10 +330,10 @@ def init(read1, read2, long, prefix, order, genus, threads, memory, run_coverage
                     logger.warning(f"Sample {prefix} failed the assembly validation at the nanopore draft level (after failing the hybrid assembly validation). Sample will be drop and no genome will be reported.")
             else:
                 # No validation variables (Draft)
-                logger.error(f"Assembly validation for sample {prefix} was not completed. Please, check the logs.")
+                logger.error(f"Draft assembly validation for sample {prefix} was not completed. Please, check the logs.")
     else:
         # No validation variables (HA)
-        logger.error(f"Validation for sample {prefix} was not completed. Please, check the logs.")
+        logger.error(f"Hybrid assembly validation for sample {prefix} was not completed. Please, check the logs.")
 
 
 
