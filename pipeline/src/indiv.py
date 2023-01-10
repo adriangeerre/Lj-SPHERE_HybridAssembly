@@ -44,18 +44,21 @@ def exec_info(read1, read2, long, prefix, order, genus, threads, memory, run_cov
     return(message)
 
 # Functions
-def coverage(assembly_folder, prefix, software, reads_1, reads_2, threads, cpath):
+def exec_coverage(assembly_folder, prefix, software, reads1, reads2, threads, cpath):
     # Align illumina
-    coverage.align_illumina(assembly=f"{assembly_folder}/{prefix}/{software}/assembly.fasta", illumina_corr_1=reads_1, illumina_corr_2=reads_2, out_dir=f"{assembly_folder}/{prefix}/Align", threads=threads, conda_path=cpath, logfile=f".logs/{prefix}.log")
+    if not os.path.exists(f'{assembly_folder}/{prefix}/Align/Illumina.sort.bam'):
+        coverage.align_illumina(assembly=f"{assembly_folder}/{prefix}/{software}/assembly.fasta", illumina_corr_1=reads1, illumina_corr_2=reads2, out_dir=f"{assembly_folder}/{prefix}/Align", threads=threads, conda_path=cpath, logfile=f".logs/{prefix}.log")
 
     # Align nanopore
-    coverage.align_nanopore(assembly=f"{assembly_folder}/{prefix}/{software}/assembly.fasta", nanopore_corr=f"10-Correction/{prefix}/Nanopore/nanopore.corrected.fasta", out_dir=f"{assembly_folder}/{prefix}/Align", threads=threads, conda_path=cpath, logfile=f".logs/{prefix}.log")
+    if not os.path.exists(f'{assembly_folder}/{prefix}/Align/Nanopore.sort.bam'):
+        coverage.align_nanopore(assembly=f"{assembly_folder}/{prefix}/{software}/assembly.fasta", nanopore_corr=f"10-Correction/{prefix}/Nanopore/nanopore.corrected.fasta", out_dir=f"{assembly_folder}/{prefix}/Align", threads=threads, conda_path=cpath, logfile=f".logs/{prefix}.log")
     
     # Obtain coverage
-    coverage.coverage(in_dir="{assembly_folder}/{prefix}/Align", out_dir=f"{assembly_folder}/{prefix}/Coverage", conda_path=cpath, logfile=f".logs/{prefix}.log")
+    if not os.path.exists(f'{assembly_folder}/{prefix}/Coverage/Nanopore.cov') and not os.path.getsize(f'{assembly_folder}/{prefix}/Covergae/Nanopore.cov') == 0 and not os.path.exists(f'{assembly_folder}/{prefix}/Coverage/Illumina.cov') and not os.path.getsize(f'{assembly_folder}/{prefix}/Covergae/Illumina.cov') == 0:
+        coverage.coverage(in_dir=f"{assembly_folder}/{prefix}/Align", out_dir=f"{assembly_folder}/{prefix}/Coverage", conda_path=cpath, logfile=f".logs/{prefix}.log")
 
-    # Plot coverage
-    coverage.plot_coverage(in_dir=f"{assembly_folder}/{prefix}/Align", out_dir=f"{assembly_folder}/{prefix}/Coverage/CovPlots", prefix=prefix, conda_path=cpath, logfile=f".logs/{prefix}.log")
+    # Plot coverage (no "if" because undetermined number of plots)
+    coverage.plot_coverage(in_dir=f"{assembly_folder}/{prefix}/Coverage", out_dir=f"{assembly_folder}/{prefix}/Coverage/CovPlots", conda_path=cpath, logfile=f".logs/{prefix}.log")
 
 def conda_path():
     # Exec terminal command
@@ -216,14 +219,16 @@ def init(read1, read2, long, prefix, order, genus, threads, memory, run_coverage
             # Complete Genome
             if "avha" in locals():
                 if avha == "Pass":
+                    logger.info(f'Selecting Hybrid Assembly genome for {prefix}')
+
                     # Create folder
                     if not os.path.isdir("60-Genomes/Complete"): os.makedirs("60-Genomes/Complete")
                     
                     # Move assembly to Complete Genome
-                    os.system(f"cp {assembly_folder}/{prefix}/unicycler/assembly.fasta 60-Genomes/Complete/{prefix}.assembly")
+                    os.system(f"cp {assembly_folder}/{prefix}/unicycler/assembly.fasta 60-Genomes/Complete/{prefix}.assembly.fasta")
                     
                     # Remove assembly from Improved Genome
-                    if os.path.exists(f"60-Genomes/Improved/{prefix}.assembly"): os.remove(f"60-Genomes/Improved/{prefix}.assembly.fasta")
+                    if os.path.exists(f"60-Genomes/Improved/{prefix}.assembly.fasta"): os.remove(f"60-Genomes/Improved/{prefix}.assembly.fasta")
 
                     # Coverage
                     if run_coverage == True:
@@ -231,7 +236,7 @@ def init(read1, read2, long, prefix, order, genus, threads, memory, run_coverage
                         logger.info('**** Running coverage HA ****')
 
                         # Call
-                        coverage(assembly_folder=assembly_folder, prefix=prefix, software=software, reads_1=read_corr_1, reads2=read_corr_2, threads=threads, cpath=cpath)
+                        exec_coverage(assembly_folder=assembly_folder, prefix=prefix, software=software, reads1=f"10-Correction/{prefix}/Illumina/corrected/{read_corr_1}", reads2=f"10-Correction/{prefix}/Illumina/corrected/{read_corr_2}", threads=threads, cpath=cpath)
 
                 else:
                     logger.warning(f"Sample {prefix} failed the hybrid assembly annotation validation.")
@@ -307,6 +312,8 @@ def init(read1, read2, long, prefix, order, genus, threads, memory, run_coverage
                     # Improved Genome
                     if "avd" in locals():
                         if avd == "Pass":
+                            logger.info(f'Selecting Draft Assembly genome for {prefix}')
+
                             # Create folder
                             if not os.path.isdir("60-Genomes/Improved"): os.makedirs("60-Genomes/Improved")
                             
@@ -319,7 +326,7 @@ def init(read1, read2, long, prefix, order, genus, threads, memory, run_coverage
                                 logger.info('**** Running coverage Draft ****')
 
                                 # Call
-                                coverage(assembly_folder=assembly_folder, prefix=prefix, software=software, reads_1=read_corr_1, reads2=read_corr_2, threads=threads, cpath=cpath)
+                                exec_coverage(assembly_folder=assembly_folder, prefix=prefix, software=software, reads1=f"10-Correction/{prefix}/Illumina/corrected/{read_corr_1}", reads2=f"10-Correction/{prefix}/Illumina/corrected/{read_corr_2}", threads=threads, cpath=cpath)
 
                         else:
                             logger.warning(f"Sample {prefix} failed the draft annotation validation. Sample will be drop and no genome will be reported.")
@@ -334,6 +341,9 @@ def init(read1, read2, long, prefix, order, genus, threads, memory, run_coverage
     else:
         # No validation variables (HA)
         logger.error(f"Hybrid assembly validation for sample {prefix} was not completed. Please, check the logs.")
+
+    # END
+    logger.info(f'### Execution is finished! ###')
 
 
 

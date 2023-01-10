@@ -73,15 +73,9 @@ def coverage(in_dir, out_dir, conda_path, logfile):
 	f.close()
 
 # Plot Coverage
-def plot_coverage(in_dir, out_dir, prefix, conda_path, logfile):
+def plot_coverage(in_dir, out_dir, conda_path, logfile):
 	# Folder structure
 	if os.path.isdir(out_dir) == False: os.makedirs(out_dir)
-
-	# Number of contigs
-	if os.path.exists("30-HybridAssembly/{}/unicycler/assembly.fasta".format(prefix)):
-		num_contigs = len([1 for line in open("30-HybridAssembly/{}/unicycler/assembly.fasta".format(prefix)) if line.startswith(">")])
-	else:
-		num_contigs = 1
 
 	cmd='''/bin/bash -c "
 	# Source conda to work with environments
