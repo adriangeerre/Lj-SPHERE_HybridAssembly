@@ -22,7 +22,7 @@ def pgap_files_creator(genus, assembly, out_dir):
 		yaml.dump(dct_input, yaml_file)
 
 # Annotation
-def annotation(input_yaml, out_dir, threads, memory, conda_path, logfile):
+def annotation(input_yaml, out_dir, threads, memory, sif_image, conda_path, logfile):
 	# Folder structure
 	if os.path.isdir(out_dir) == False: os.makedirs(out_dir)
 
@@ -32,8 +32,8 @@ def annotation(input_yaml, out_dir, threads, memory, conda_path, logfile):
 	export SINGULARITY_TMPDIR=/scratch/$SLURM_JOBID
 
 	# PGAP (already in path)
-	python /home/agomez/programas/PGAP/pgap.py -d -n --no-internet --ignore-all-errors --docker singularity -o {out_dir}/annotation --memory {memory} --container-path ~/programas/SingularityImages/pgap_2022-08-11.build6275.sif {input_yaml}
-	'''.format(input_yaml=input_yaml, out_dir=out_dir, memory=memory, conda_path=conda_path)
+	python /home/agomez/programas/PGAP/pgap.py -d -n --no-internet --ignore-all-errors --docker singularity -o {out_dir}/annotation --no-self-update --memory {memory} --cpus {threads} --container-path {sif_image} {input_yaml}
+	'''.format(input_yaml=input_yaml, out_dir=out_dir, sif_image=sif_image, memory=memory, threads=threads, conda_path=conda_path)
 
 	# Exec and log
 	f = open(logfile, "a")

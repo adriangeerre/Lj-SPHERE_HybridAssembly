@@ -73,6 +73,9 @@ def conda_path():
 
 def init(read1, read2, long, prefix, order, genus, threads, memory, run_coverage):
 
+    # Singularity image (SIF)
+    sif_image = "/home/agomez/programas/SingularityImages/pgap_2022-12-13.build6494.sif"
+
     # Conda path
     cpath = conda_path()[0]
 
@@ -84,7 +87,7 @@ def init(read1, read2, long, prefix, order, genus, threads, memory, run_coverage
     LOG_FORMAT = "%(asctime)s %(levelname)-8s %(message)s"
     LOG_LEVEL = "INFO"
     LOG_DATEFMT = "%d/%m/%Y %H:%M:%S"
-    logging.basicConfig(filename=LOG_FILE, format=LOG_FORMAT, level=getattr(logging, LOG_LEVEL),  datefmt=LOG_DATEFMT)
+    logging.basicConfig(format=LOG_FORMAT, level=getattr(logging, LOG_LEVEL),  datefmt=LOG_DATEFMT, handlers=[logging.FileHandler(LOG_FILE),logging.StreamHandler()])
     logger = logging.getLogger()
 
     # Logging header
@@ -163,7 +166,7 @@ def init(read1, read2, long, prefix, order, genus, threads, memory, run_coverage
     except:
         logger.error(f"Database for {order} not considered for Busco execution. You can modify the object \"busco_dict\" to include the required database. Please, check \"busco --list-datasets\" to know which Order should be selected.")
         logger.warning("If CheckM failed with \"FileNotFoundError: [Errno 2] No such file or directory: '~/.checkm/hmms/phylo.hmm'\", use 'checkm data setRoot <checkm_data_dir>' to specify the location of CheckM database files.")
-        pass
+        exit()
 
     # Check validation
     #-----------------
@@ -204,7 +207,7 @@ def init(read1, read2, long, prefix, order, genus, threads, memory, run_coverage
                     annotation.pgap_files_creator(genus = genus, assembly = f"{assembly_folder}/{prefix}/{software}/assembly.fasta", out_dir = out_dir_yaml)
                     
                 if os.path.exists(out_dir_yaml + '.submol.yml') and os.path.exists(out_dir_yaml + '.input.yml') and genus != "NA" and not os.path.isdir(f'50-Annotation/{prefix}/{software}/annotation'):
-                    annotation.annotation(input_yaml=f"{out_dir_yaml}.input.yml", out_dir=f"50-Annotation/{prefix}/{software}", memory=4, threads=1,  conda_path=cpath, logfile=f".logs/{prefix}.log")
+                    annotation.annotation(input_yaml=f"{out_dir_yaml}.input.yml", out_dir=f"50-Annotation/{prefix}/{software}", memory=4, threads=threads, sif_image=sif_image, conda_path=cpath, logfile=f".logs/{prefix}.log")
 
             # Validate Hybrid Assembly annotation
             if os.path.isdir(f"50-Annotation/{prefix}/{software}/annotation"):
@@ -212,9 +215,8 @@ def init(read1, read2, long, prefix, order, genus, threads, memory, run_coverage
                 try:
                     avha = validation.validate_pgap(a)                
                 except:
-                    if os.path.isdir(f"50-Annotation/{prefix}/annotation"):
-                        logger.error(f"File \"{a}\" is missing or empty.")
-                        pass
+                    logger.error(f"File \"{a}\" is missing or empty.")
+                    pass
 
             # Complete Genome
             if "avha" in locals():
@@ -242,7 +244,12 @@ def init(read1, read2, long, prefix, order, genus, threads, memory, run_coverage
                     logger.warning(f"Sample {prefix} failed the hybrid assembly annotation validation.")
             else:
                 logger.error(f"Hybrid assembly annotation validation for sample {prefix} was not completed. Please, check the logs.")
+                exit()
         
+        # Define "avha" if "bvha" or "cvha" equal "Fail"
+        if "avha" not in locals() or avha != "Pass":
+            avha = "Fail"
+
         # HA assembly or annotation failed (all variables already checked in globals)
         if bvha == "Fail" or cvha == "Fail" or avha == "Fail":
             # Validation failed (Draft)
@@ -260,13 +267,13 @@ def init(read1, read2, long, prefix, order, genus, threads, memory, run_coverage
                     validation.assembly_validation(assembly=f"{assembly_folder}/{prefix}/{software}/assembly.fasta", database=database, out_dir=f"40-Validation/{prefix}/{software}", threads=threads, conda_path=cpath, logfile=f".logs/{prefix}.log")
             except:
                 logger.error(f"Database for {order} not considered for Busco execution. You can modify the object \"busco_dict\" to include the required database. Please, check \"busco --list-datasets\" to know which Order should be selected.")
-                pass
+                exit()
 
             # Validate Draft BUSCO
             if os.path.isdir(f"40-Validation/{prefix}/{software}/Busco"):
                 try:
                     bd = [i for i in os.listdir(f"40-Validation/{prefix}/{software}/Busco") if i[-5:] == ".json"][0]
-                    bfd = open(f"40-Validation/{prefix}/{software}Busco/{bd}")
+                    bfd = open(f"40-Validation/{prefix}/{software}/Busco/{bd}")
                     bdd = json.load(bfd)
                     bvd = validation.validate_busco(bdd)
                     bfd.close()
@@ -305,9 +312,8 @@ def init(read1, read2, long, prefix, order, genus, threads, memory, run_coverage
                         try:
                             avd = validation.validate_pgap(a)                
                         except:
-                            if os.path.isdir(f"50-Annotation/{prefix}/annotation"):
-                                logger.error(f"File \"{a}\" is missing or empty.")
-                                pass
+                            logger.error(f"File \"{a}\" is missing or empty.")
+                            pass
                     
                     # Improved Genome
                     if "avd" in locals():
@@ -332,15 +338,18 @@ def init(read1, read2, long, prefix, order, genus, threads, memory, run_coverage
                             logger.warning(f"Sample {prefix} failed the draft annotation validation. Sample will be drop and no genome will be reported.")
                     else:
                         logger.error(f"Draft annotation validation for sample {prefix} was not completed. Please, check the logs.")
+                        exit()
                 else:
                     # Validation failed (Draft)
                     logger.warning(f"Sample {prefix} failed the assembly validation at the nanopore draft level (after failing the hybrid assembly validation). Sample will be drop and no genome will be reported.")
             else:
                 # No validation variables (Draft)
                 logger.error(f"Draft assembly validation for sample {prefix} was not completed. Please, check the logs.")
+                exit()
     else:
         # No validation variables (HA)
         logger.error(f"Hybrid assembly validation for sample {prefix} was not completed. Please, check the logs.")
+        exit()
 
     # END
     logger.info(f'### Execution is finished! ###')
