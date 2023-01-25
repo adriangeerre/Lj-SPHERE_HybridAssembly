@@ -179,6 +179,8 @@ for row in f:
 				
 				if os.path.exists(out_dir_yaml + '.submol.yml') and os.path.exists(out_dir_yaml + '.input.yml') and genus != "NA":
 					gwf.target_from_template("{}_50_annotation_hybridassembly".format(folder), annotation.annotation(assembly="30-HybridAssembly/{}/unicycler/assembly.fasta".format(folder), input_yaml = "{}.input.yml".format(out_dir_yaml), out_dir="50-Annotation/{}/unicycler".format(folder), threads=1, memory=4))
+				else:
+					log.write(f"PGAP input files might be missing or the defined genus is \"NA\" for sample {folder}\n")
 
 			# Check annotation output
 			if os.path.isdir("50-Annotation/{}/unicycler/annotation".format(folder)):
@@ -276,6 +278,8 @@ for row in f:
 				
 				if os.path.exists(out_dir_yaml + '.submol.yml') and os.path.exists(out_dir_yaml + '.input.yml') and genus != "NA":
 					gwf.target_from_template("{}_50_annotation_assembly".format(folder), annotation.annotation(assembly="20-Assembly/{}/flye/assembly.fasta".format(folder), input_yaml = "{}.input.yml".format(out_dir_yaml), out_dir="50-Annotation/{}/flye/".format(folder), threads=1, memory=4))
+				else:
+					log.write(f"PGAP input files might be missing or the defined genus is \"NA\" for sample {folder}\n")
 
 			# Check annotation output
 			if os.path.isdir("50-Annotation/{}/flye/annotation".format(folder)):
