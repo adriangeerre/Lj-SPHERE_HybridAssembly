@@ -37,6 +37,10 @@ def annotation(assembly, input_yaml, out_dir, threads, memory):
 	export SINGULARITY_CACHEDIR=/scratch/$SLURM_JOBID
 	export SINGULARITY_TMPDIR=/scratch/$SLURM_JOBID
 
+	if [ -d {out_dir}/annotation ] && [ ! -f {out_dir}/annotation/annot.gff ]; then
+		mv {out_dir}/annotation {out_dir}/annotation.previous
+	fi
+
 	# PGAP (already in path)
 	python /home/agomez/programas/PGAP/pgap.py -d -n --no-internet --ignore-all-errors --docker singularity -o {out_dir}/annotation --memory {memory} --container-path ~/programas/SingularityImages/pgap_2022-08-11.build6275.sif {input_yaml}
 	'''.format(input_yaml=input_yaml, out_dir=out_dir, memory=memory)
