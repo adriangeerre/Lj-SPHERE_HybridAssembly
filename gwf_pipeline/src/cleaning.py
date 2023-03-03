@@ -61,27 +61,24 @@ def remove_duplicate_contigs(assembly, threshold, out_dir, threads, memory):
 
     # Split assembly in contigs
     conda activate SeqKit
-    seqkit split -i {assembly} -o {out_dir}
+    seqkit split -i {assembly} -O {out_dir}/{prefix}
 
-    # FastANI
-    conda activate FastANI
-    for i in $(ls {out_dir}); do
-        mkdir -p {out_dir}/${i}
-        for j in $(ls {out_dir}); do
-            if [[ ! -f {out_dir}/${i}/${i}_${j}.ani && ! -f {out_dir}/${j}/${j}_${i}.ani ]]
-                fastANI -q {out_dir}/${i} -r {out_dir}/${j} -o {out_dir}/${i}/${i}_${j}.ani -t {threads}
-        done
-    done
+    # MashTree
+    conda activate MashTree
+    mashtree --numcpus {threads} --outmatrix {out_dir}/{prefix}.distmat --outtree {out_dir}/{prefix}.tree --mindepth 0 {out_dir}/{prefix}/*.fasta
+
+    # Size of contigs
+    for fna in $(ls -d {out_dir}/{prefix}/*); do printf "$(basename $fna | sed 's/.fasta//g')\t$(cat $fna | grep -v "^>" | tr -d "\n" | wc -c)\n"; done | sort -rn -k 2 > {out_dir}/{prefix}/contigs_size.tsv
 
     # Summarize all
-    cat {out_dir}/*/*.ani | awk '($1 != $2)' | awk '($3 >= {threshold})' > {out_dir}/
+    conda activate Renv
+    Rscript cleaning.R -m {out_dir}/{prefix}.distmat -s {out_dir}/{prefix}/contigs_size.tsv -c {threshold} -o {out_dir}/{prefix}
+
+    # Clean assembly
 
 	'''.format(assembly=assembly, out_dir=out_dir, threads=threads)
 
 	return AnonymousTarget(inputs=inputs, outputs=outputs, options=options, spec=spec)
-
-# cd folder
-# cat * | awk '($1 != $2)'
 
 # library(tidyverse)
 # df <- read.table("LjRoot178.distmat", header=T, sep="\t")
