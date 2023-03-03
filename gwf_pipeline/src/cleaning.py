@@ -79,10 +79,3 @@ def remove_duplicate_contigs(assembly, threshold, out_dir, threads, memory):
 	'''.format(assembly=assembly, out_dir=out_dir, threads=threads)
 
 	return AnonymousTarget(inputs=inputs, outputs=outputs, options=options, spec=spec)
-
-# library(tidyverse)
-# df <- read.table("LjRoot178.distmat", header=T, sep="\t")
-# row.names(df) <- df$. 
-# df <- df[,2:ncol(df)]
-# df %>% add_rownames() %>% gather(key, value, -rowname) %>% filter(value <= 0.05) %>% filter(rowname != key) %>% spread(key, value, fill = NA)
-# LjRoot34!!!
