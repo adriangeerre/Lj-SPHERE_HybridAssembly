@@ -5,20 +5,20 @@
 # Created Date	: 03/03/2023
 # version 		: '1.0'
 # ---------------------------------------------------------------------------
-# """ Script to identify identical contigs given threshold""" 
+# """Script to identify identical contigs given threshold""" 
 # ---------------------------------------------------------------------------
 
 # Libraries
 # ---------
-library(tidyverse)
-library(optparse)
+suppressMessages(library(tidyverse))
+suppressMessages(library(optparse))
 
 # Parameters
 # ----------
 option_list = list(
   make_option(c("-m", "--distance_matrix"), action="store", default=NA, type='character', help="MashTree distance matrix."),
   make_option(c("-s", "--contigs_size"), action="store", default=NA, type='character', help="Length of contigs."),            
-  make_option(c("-c", "--cutoff"), action="store", default=NA, type='character', help="Cutoff to define identical contigs (min similarity:0 / max similarity: 100).")
+  make_option(c("-c", "--cutoff"), action="store", default=NA, type='numeric', help="Cutoff to define identical contigs (min similarity:0 / max similarity: 100)."),
   make_option(c("-o", "--output_path"), action="store", default=95, type='character', help="Path to save output.")
 )
 opt = parse_args(OptionParser(option_list=option_list))
@@ -27,8 +27,8 @@ opt = parse_args(OptionParser(option_list=option_list))
 # ---------
 
 # Read file
-df <- read.table(opt$m, header=T, sep="\t")
-sizes <- read.table(opt$s, header=F, sep="\t")
+df <- read.table(opt$distance_matrix, header=T, sep="\t")
+sizes <- read.table(opt$contigs_size, header=F, sep="\t")
 
 # Transform data
 # --------------
@@ -38,7 +38,7 @@ row.names(df) <- df$.
 df <- df[,2:ncol(df)]
 
 # Subset similar contigs
-sdf <- df %>% add_rownames() %>% gather(key, value, -rowname) %>% filter(value <= 1-(opt$c/100)) %>% filter(rowname != key)
+sdf <- df %>% rownames_to_column() %>% gather(key, value, -rowname) %>% filter(value <= 1-(opt$cutoff/100)) %>% filter(rowname != key)
 spdf <- sdf %>% spread(key, value, fill = NA)
 
 # Remove duplicates (A/B == B/A)
@@ -53,7 +53,7 @@ for (n in 1:nrow(sdf)) {
         # Remove left
         remove <- c(remove, left)
     } else {
-        # Remove rigth
+        # Remove right
         remove <- c(remove, right)
     }
 }
@@ -62,8 +62,7 @@ for (n in 1:nrow(sdf)) {
 # ---------
 
 # Contigs and values
-write.table(spdf, file=paste(opt$o, "/remove_contigs_values.tsv", sep=""), quote=F, row.names=F, col.names=T, sep="\t")
+write.table(spdf, file=paste(opt$output_path, "/remove_contigs_values.tsv", sep=""), quote=F, row.names=F, col.names=T, sep="\t")
 
 # Contigs to remove
-write.table(remove, file=paste(opt$o, "/remove_contigs.txt", sep=""), quote=F, row.names=F, col.names=F, sep="\t")
-
+write.table(remove, file=paste(opt$output_path, "/remove_contigs.txt", sep=""), quote=F, row.names=F, col.names=F, sep="\t")

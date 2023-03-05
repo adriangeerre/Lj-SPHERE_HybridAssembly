@@ -19,6 +19,8 @@ from src import assembly
 from src import coverage
 from src import validation
 from src import annotation
+from src import cleaning
+from src import tree
 
 # External
 import os
@@ -115,8 +117,11 @@ for row in f:
 	# 30 Unicycler
 	gwf.target_from_template("{}_30_hybrid_assembly_unicycler".format(folder), assembly.unicycler(assembly="20-Assembly/{}/flye/assembly.fasta".format(folder), illumina_corr_1="10-Correction/{}/Illumina/corrected/{}".format(folder, illumina_corr_1), illumina_corr_2="10-Correction/{}/Illumina/corrected/{}".format(folder, illumina_corr_2), nanopore_corr="10-Correction/{}/Nanopore/nanopore.corrected.fasta".format(folder), out_dir="30-HybridAssembly/{}/unicycler".format(folder), threads=8, memory=64, folder=folder))
 
+	# Remove duplicate contigs
+	gwf.target_from_template("{}_30_hybrid_assembly_overlap_clean".format(folder), cleaning.remove_duplicate_contigs(assembly="30-HybridAssembly/{}/unicycler/assembly.fasta".format(folder), prefix=folder, threshold=95, out_dir="30-HybridAssembly/{}/unicycler/".format(folder), threads=2, memory=4))
+
 	# 30 Quast
-	gwf.target_from_template("{}_30_quast_hybridassembly".format(folder), validation.quast(assembly="30-HybridAssembly/{}/unicycler/assembly.fasta".format(folder), out_dir="30-HybridAssembly/{}/Quast".format(folder), threads=4, memory=32))
+	gwf.target_from_template("{}_30_quast_hybridassembly".format(folder), validation.quast(assembly="30-HybridAssembly/{}/unicycler/{}.clean-overlap.fasta".format(folder, folder), out_dir="30-HybridAssembly/{}/Quast".format(folder), threads=4, memory=32))
 
 	# 30 Coverage
 	if run_coverage == "True":
@@ -138,7 +143,7 @@ for row in f:
 	# 40 Validation
 	database = busco_dict[LjTaxa[folder]]
 	if database != "NA":
-		gwf.target_from_template("{}_40_validation_hybridassembly".format(folder), validation.assembly_validation(assembly="30-HybridAssembly/{}/unicycler/assembly.fasta".format(folder), database=database, out_dir="40-Validation/{}/unicycler".format(folder), threads=4, memory=24))
+		gwf.target_from_template("{}_40_validation_hybridassembly".format(folder), validation.assembly_validation(assembly="30-HybridAssembly/{}/unicycler/{}.clean-overlap.fasta".format(folder, folder), database=database, out_dir="40-Validation/{}/unicycler".format(folder), threads=4, memory=24))
 	else:
 		log.write(f"Validation not performed for {folder}. Taxonomy is equal to \"NA\"\n")
 
@@ -175,12 +180,15 @@ for row in f:
 				out_dir_yaml = "30-HybridAssembly/{}/unicycler/{}".format(folder, folder)
 				genus = LjGenus[folder]
 				if not os.path.exists(out_dir_yaml + ".submol.yml") and not os.path.exists(out_dir_yaml + ".input.yml"):
-					annotation.pgap_files_creator(genus = genus, assembly = "30-HybridAssembly/{}/unicycler/assembly.fasta".format(folder), out_dir = out_dir_yaml)
+					annotation.pgap_files_creator(genus = genus, assembly = "30-HybridAssembly/{}/unicycler/{}.clean-overlap.fasta".format(folder, folder), out_dir = out_dir_yaml)
 				
 				if os.path.exists(out_dir_yaml + '.submol.yml') and os.path.exists(out_dir_yaml + '.input.yml') and genus != "NA":
-					gwf.target_from_template("{}_50_annotation_hybridassembly".format(folder), annotation.annotation(assembly="30-HybridAssembly/{}/unicycler/assembly.fasta".format(folder), input_yaml = "{}.input.yml".format(out_dir_yaml), out_dir="50-Annotation/{}/unicycler".format(folder), threads=1, memory=4))
+					gwf.target_from_template("{}_50_annotation_hybridassembly".format(folder), annotation.annotation(assembly="30-HybridAssembly/{}/unicycler/{}.clean-overlap.fasta".format(folder, folder), input_yaml = "{}.input.yml".format(out_dir_yaml), out_dir="50-Annotation/{}/unicycler".format(folder), threads=1, memory=4))
 				else:
 					log.write(f"PGAP input files might be missing or the defined genus is \"NA\" for sample {folder}\n")
+
+			# Remove empty contigs
+			cleaning.remove_empty_contigs(assembly="30-HybridAssembly/{}/unicycler/{}.clean-overlap.fasta".format(folder, folder), gff="50-Annotation/{}/unicycler/annotation/annot.gff".format(folder), out_dir="30-HybridAssembly/{}/unicycler/")
 
 			# Check annotation output
 			if os.path.isdir("50-Annotation/{}/unicycler/annotation".format(folder)):
@@ -197,7 +205,7 @@ for row in f:
 				if not os.path.isdir("60-Genomes/Complete"): os.makedirs("60-Genomes/Complete")
 
 				# Move assembly to Complete Genome
-				os.system("cp 30-HybridAssembly/{}/unicycler/assembly.fasta 60-Genomes/Complete/{}.assembly.fasta".format(folder, folder))
+				os.system("cp 30-HybridAssembly/{}/unicycler/{}.clean.fasta 60-Genomes/Complete/{}.assembly.fasta".format(folder, folder, folder))
 
 				# Remove assembly from Improved Genome
 				if os.path.exists("60-Genomes/Improved/{}.assembly.fasta".format(folder)): os.remove("60-Genomes/Improved/{}.assembly.fasta".format(folder))
@@ -213,8 +221,11 @@ for row in f:
 	# If anything fails, the draft is taken into account
 	if "Failed" in val_ha.values():
 
+		# Remove duplicate contigs
+		gwf.target_from_template("{}_20_draft_assembly_overlap_clean".format(folder), cleaning.remove_duplicate_contigs(assembly="20-Assembly/{}/flye/assembly.fasta".format(folder), prefix=folder, threshold=95, out_dir="20-Assembly/{}/flye/".format(folder), threads=2, memory=4))
+
 		# 20 Quast
-		gwf.target_from_template("{}_20_quast_assembly".format(folder), validation.quast(assembly="20-Assembly/{}/flye/assembly.fasta".format(folder), out_dir="20-Assembly/{}/Quast".format(folder), threads=4, memory=32))
+		gwf.target_from_template("{}_20_quast_assembly".format(folder), validation.quast(assembly="20-Assembly/{}/flye/{}.clean-overlap.fasta".format(folder, folder), out_dir="20-Assembly/{}/Quast".format(folder), threads=4, memory=32))
 
 		# 20 Coverage
 		if run_coverage == "True":
@@ -236,7 +247,7 @@ for row in f:
 		# 40 Validation
 		database = busco_dict[LjTaxa[folder]]
 		if database != "NA":
-			gwf.target_from_template("{}_40_validation_assembly".format(folder), validation.assembly_validation(assembly="20-Assembly/{}/flye/assembly.fasta".format(folder), database=database, out_dir="40-Validation/{}/flye".format(folder), threads=4, memory=24))
+			gwf.target_from_template("{}_40_validation_assembly".format(folder), validation.assembly_validation(assembly="20-Assembly/{}/flye/{}.clean-overlap.fasta".format(folder, folder), database=database, out_dir="40-Validation/{}/flye".format(folder), threads=4, memory=24))
 		else:
 			log.write(f"Validation not performed for {folder}. Taxonomy is equal to \"NA\"\n")
 
@@ -267,19 +278,21 @@ for row in f:
 		# ---------------------------------------------------------------
 
 		# Check validation output
-
 		if val_draft["bv"] == "Pass" and val_draft["cv"] == "Pass":
 			# 50 Annotation
 			if os.path.isdir("20-Assembly/{}/flye".format(folder)):
 				out_dir_yaml = "20-Assembly/{}/flye/{}".format(folder, folder)
 				genus = LjGenus[folder]
 				if not os.path.exists(out_dir_yaml + ".submol.yml") and not os.path.exists(out_dir_yaml + ".input.yml"):
-					annotation.pgap_files_creator(genus = genus, assembly = "20-Assembly/{}/flye/assembly.fasta".format(folder), out_dir = out_dir_yaml)
+					annotation.pgap_files_creator(genus = genus, assembly = "20-Assembly/{}/flye/{}.clean-overlap.fasta".format(folder, folder), out_dir = out_dir_yaml)
 				
 				if os.path.exists(out_dir_yaml + '.submol.yml') and os.path.exists(out_dir_yaml + '.input.yml') and genus != "NA":
-					gwf.target_from_template("{}_50_annotation_assembly".format(folder), annotation.annotation(assembly="20-Assembly/{}/flye/assembly.fasta".format(folder), input_yaml = "{}.input.yml".format(out_dir_yaml), out_dir="50-Annotation/{}/flye/".format(folder), threads=1, memory=4))
+					gwf.target_from_template("{}_50_annotation_assembly".format(folder), annotation.annotation(assembly="20-Assembly/{}/flye/{}.clean-overlap.fasta".format(folder, folder), input_yaml = "{}.input.yml".format(out_dir_yaml), out_dir="50-Annotation/{}/flye/".format(folder), threads=1, memory=4))
 				else:
 					log.write(f"PGAP input files might be missing or the defined genus is \"NA\" for sample {folder}\n")
+
+			# Remove empty contigs
+			cleaning.remove_empty_contigs(assembly="20-Assembly/{}/flye/{}.clean-overlap.fasta".format(folder, folder), gff="50-Annotation/{}/flye/annotation/annot.gff".format(folder), out_dir="20-Assembly/{}/flye/")
 
 			# Check annotation output
 			if os.path.isdir("50-Annotation/{}/flye/annotation".format(folder)):
@@ -295,7 +308,7 @@ for row in f:
 				if not os.path.isdir("60-Genomes/Improved"): os.makedirs("60-Genomes/Improved")
 
 				# Move assembly to Improved Genome
-				os.system("cp 20-Assembly/{}/flye/assembly.fasta 60-Genomes/Improved/{}.assembly.fasta".format(folder, folder))
+				os.system("cp 20-Assembly/{}/flye/{}.clean-overlap.fasta 60-Genomes/Improved/{}.assembly.fasta".format(folder, folder, folder))
 
 				# Log file
 				log.write(f"Genome for {folder} was marked as Improved\n")
@@ -310,6 +323,54 @@ for row in f:
 
 	# Close log file
 	log.close()
+
+# Tree (Mash)
+#if len(os.listdir("60-Genomes/Complete")) > 2:
+	#gwf.target_from_template('Tree_Complete_Genomes' ,tree.mashtree(in_dir="60-Genomes/Complete", out_dir="70-Tree/Complete/", threads=4, memory=8))
+
+# Completness vs Contamination
+gwf.target('PlotCheckM', inputs=[None], outputs=['PlotCheckM.tsv']) << """
+# Create tab-delimited file
+for r in $(ls 40-Validation/); do
+	if [ -f 40-Validation/$r/CheckM/results.tsv ]; then
+		# Completness and Contamination
+		completness=$(cat 40-Validation/$r/unicycler/CheckM/results.tsv | cut -f 12 | tail -n 1)
+		contamination=$(cat 40-Validation/$r/unicycler/CheckM/results.tsv | cut -f 13 | tail -n 1)
+	else
+		completness=NA
+		contamination=NA
+	fi
+
+	# Status
+	if [ -f 60-Genomes/Complete/$r.assembly.fasta ]; then
+		status="Complete"
+		# Contigs
+		contigs=$(grep "^>" 30-HybridAssembly/"$r"/unicycler/"$r".clean.fasta | wc -l)
+	elif [ -f 60-Genomes/Improved/"$r".assembly.fasta ]; then
+		status="Improved"
+		# Contigs
+		contigs=$(grep "^>" 30-Assembly/"$r"/flye/$r.clean.fasta | wc -l)
+	else
+		status="Failed"
+		# Contigs
+		if [ -f 30-HybridAssembly/"$r"/unicycler/$r.clean.fasta ]; then
+			contigs=$(grep "^>" 30-HybridAssembly/"$r"/unicycler/$r.clean.fasta | wc -l)
+		elif [ -f 30-HybridAssembly/"$r"/unicycler/assembly.fasta ]; then
+			contigs=$(grep "^>" 30-HybridAssembly/"$r"/unicycler/assembly.fasta | wc -l)
+		elif [ -f 20-Assembly/"$r"/unicycler/"$r".clean.fasta ]; then
+			contigs=$(grep "^>" 20-Assembly/"$r"/unicycler/$r.clean.fasta | wc -l)
+		elif [ -f 20-Assembly/"$r"/unicycler/assembly.fasta ]; then
+			contigs=$(grep "^>" 20-Assembly/"$r"/unicycler/assembly.fasta | wc -l)
+		else
+			contigs=NA
+		fi
+	fi
+	
+	# Print row
+	printf "$r\t$completness\t$contamination\t$contigs\t$status\n"
+
+done > PlotCheckM.tsv
+"""
 
 # SummaryTable
 gwf.target('SummaryTableCompleteGenomes', inputs=[file], outputs=['SummaryTableCompleteGenomes.tsv']) << """

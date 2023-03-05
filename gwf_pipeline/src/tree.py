@@ -1,13 +1,16 @@
+import os
+from gwf import AnonymousTarget
+
 ## GWF function
 # Mashtree
-def mashtree(assembly, out_dir, in_dir, threads, memory):
+def mashtree(in_dir, out_dir, threads, memory):
 	# Folder structure
 	if os.path.isdir(out_dir) == False: os.makedirs(out_dir)
 
 	# GWF
-	inputs = ["{}".format(assembly)]
-	outputs = ["{}/LjSC.tree".format(out_dir), "{}/LjSC.distmat".format(out_dir)]
-	options = {'cores': '{}'.format(threads), 'memory': '{}g'.format(memory), 'queue': 'short', 'walltime': '8:00:00'}
+	inputs = ["{}".format(in_dir)]
+	outputs = ["{}/LjSC.tree".format(out_dir), "{}/LjSC.distmat".format(out_dir), "{}/LjSC.tree.png".format(out_dir)]
+	options = {'cores': '{}'.format(threads), 'memory': '{}g'.format(memory), 'queue': 'short', 'walltime': '2:00:00'}
 
 	spec='''
 	# Source conda to work with environments
@@ -19,6 +22,6 @@ def mashtree(assembly, out_dir, in_dir, threads, memory):
 
     # Plot tree
 
-	'''.format(assembly=assembly, out_dir=out_dir, threads=threads)
+	'''.format(in_dir=in_dir, out_dir=out_dir, threads=threads)
 
 	return AnonymousTarget(inputs=inputs, outputs=outputs, options=options, spec=spec)

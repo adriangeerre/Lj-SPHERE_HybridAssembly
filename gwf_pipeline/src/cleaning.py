@@ -1,5 +1,8 @@
+import os
 from Bio import SeqIO
+from gwf import AnonymousTarget
 
+# Remove empty contigs in annotation
 def remove_empty_contigs(assembly, gff, out_dir):
     # Open GFF
     f = open(gff, "r")
@@ -28,11 +31,11 @@ def remove_empty_contigs(assembly, gff, out_dir):
     for n,c in contigs.items():
         if sum(c.values()) == 0:
             keep[n] = 0
-    elif sum(c.values()) != 0:
-        if c['gene'] == 0 and c['CDS'] == 0 and c['pseudogene'] == sum(c.values()):
-            keep[n] = 0
-        else:
-            keep[n] = 1
+        elif sum(c.values()) != 0:
+            if c['gene'] == 0 and c['CDS'] == 0 and c['pseudogene'] == sum(c.values()):
+                keep[n] = 0
+            else:
+                keep[n] = 1
 
     # Define name
     name = assembly.split("/")[-1].split(".")[0]
@@ -46,13 +49,13 @@ def remove_empty_contigs(assembly, gff, out_dir):
 
 ## GWF function
 # Duplicate contigs
-def remove_duplicate_contigs(assembly, threshold, out_dir, threads, memory):
+def remove_duplicate_contigs(assembly, prefix, threshold, out_dir, threads, memory):
 	# Folder structure
 	if os.path.isdir(out_dir) == False: os.makedirs(out_dir)
 
 	# GWF
 	inputs = ["{}".format(assembly)]
-	outputs = ["{}/{}.clean.fasta".format(out_dir, assembly)]
+	outputs = ["{}/{}.clean-overlap.fasta".format(out_dir, prefix), "{}/keep_contigs.txt".format(out_dir), "{}/{}.distmat".format(out_dir, prefix), "{}/{}.tree".format(out_dir, prefix)]
 	options = {'cores': '{}'.format(threads), 'memory': '{}g'.format(memory), 'queue': 'short', 'walltime': '4:00:00'}
 
 	spec='''
@@ -68,14 +71,19 @@ def remove_duplicate_contigs(assembly, threshold, out_dir, threads, memory):
     mashtree --numcpus {threads} --outmatrix {out_dir}/{prefix}.distmat --outtree {out_dir}/{prefix}.tree --mindepth 0 {out_dir}/{prefix}/*.fasta
 
     # Size of contigs
-    for fna in $(ls -d {out_dir}/{prefix}/*); do printf "$(basename $fna | sed 's/.fasta//g')\t$(cat $fna | grep -v "^>" | tr -d "\n" | wc -c)\n"; done | sort -rn -k 2 > {out_dir}/{prefix}/contigs_size.tsv
+    for fna in $(ls -d {out_dir}/{prefix}/*); do printf "$(basename $fna | sed 's/.fasta//g')\t$(cat $fna | grep -v "^>" | tr -d "\n" | wc -c)\n"; done | sort -rn -k 2 > {out_dir}/contigs_size.tsv
 
     # Summarize all
     conda activate Renv
-    Rscript cleaning.R -m {out_dir}/{prefix}.distmat -s {out_dir}/{prefix}/contigs_size.tsv -c {threshold} -o {out_dir}/{prefix}
+    Rscript src/cleaning.R -m {out_dir}/{prefix}.distmat -s {out_dir}/contigs_size.tsv -c {threshold} -o {out_dir}/
 
     # Clean assembly
+    conda activate NGSTools
+    cat {out_dir}/remove_contigs.txt | cut -d "." -f 2 | cut -d "_" -f 2 | sed 's/^/>/' | sort | uniq > {out_dir}//tmp.txt
+    grep "^>" {assembly} | grep -w -v -f {out_dir}/tmp.txt | sed 's/^>//g' > {out_dir}/keep_contigs.txt
+    seqtk subseq {assembly} {out_dir}/keep_contigs.txt > {out_dir}/{prefix}.clean-overlap.fasta
+    rm {out_dir}/tmp.txt
 
-	'''.format(assembly=assembly, out_dir=out_dir, threads=threads)
+	'''.format(assembly=assembly, prefix=prefix, threshold=threshold, out_dir=out_dir, threads=threads)
 
 	return AnonymousTarget(inputs=inputs, outputs=outputs, options=options, spec=spec)
