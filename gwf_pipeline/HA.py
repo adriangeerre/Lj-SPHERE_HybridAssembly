@@ -372,6 +372,9 @@ for r in $(ls 40-Validation/); do
 done > PlotCheckM.tsv
 """
 
+# Tree
+tree.mashtree(in_dir="60-Genomes/Complete", breps=100, threads=4, memory=8)
+
 # SummaryTable
 gwf.target('SummaryTableCompleteGenomes', inputs=[file], outputs=['SummaryTableCompleteGenomes.tsv']) << """
 echo -n "Hello " > greeting.txt

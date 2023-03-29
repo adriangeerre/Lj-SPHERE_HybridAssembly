@@ -3,14 +3,11 @@ from gwf import AnonymousTarget
 
 ## GWF function
 # Mashtree
-def mashtree(in_dir, out_dir, threads, memory):
-	# Folder structure
-	if os.path.isdir(out_dir) == False: os.makedirs(out_dir)
-
+def mashtree(in_dir, breps, threads, memory):
 	# GWF
 	inputs = ["{}".format(in_dir)]
-	outputs = ["{}/LjSC.tree".format(out_dir), "{}/LjSC.distmat".format(out_dir), "{}/LjSC.tree.png".format(out_dir)]
-	options = {'cores': '{}'.format(threads), 'memory': '{}g'.format(memory), 'queue': 'short', 'walltime': '2:00:00'}
+	outputs = ["LjSC.tree", "LjSC.distmat"]
+	options = {'cores': '{}'.format(threads), 'memory': '{}g'.format(memory), 'queue': 'short', 'walltime': '12:00:00'}
 
 	spec='''
 	# Source conda to work with environments
@@ -18,10 +15,8 @@ def mashtree(in_dir, out_dir, threads, memory):
 
     # Split assembly in contigs
     conda activate MashTree
-    mashtree --numcpus {threads} --outmatrix {out_dir}/LjSC.distmat --outtree {out_dir}/LjSC.tree --mindepth 0 {in_dir}/*.fasta
+	mashtree_bootstrap.pl --reps {breps} --numcpus {threads} --outmatrix LjSC.distmat {in_dir}/*.fasta > LjSC.tree
 
-    # Plot tree
-
-	'''.format(in_dir=in_dir, out_dir=out_dir, threads=threads)
+	'''.format(in_dir=in_dir, breps=breps, threads=threads)
 
 	return AnonymousTarget(inputs=inputs, outputs=outputs, options=options, spec=spec)
