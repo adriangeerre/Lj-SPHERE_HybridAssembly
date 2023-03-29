@@ -324,12 +324,8 @@ for row in f:
 	# Close log file
 	log.close()
 
-# Tree (Mash)
-#if len(os.listdir("60-Genomes/Complete")) > 2:
-	#gwf.target_from_template('Tree_Complete_Genomes' ,tree.mashtree(in_dir="60-Genomes/Complete", out_dir="70-Tree/Complete/", threads=4, memory=8))
-
 # Completness vs Contamination
-gwf.target('PlotCheckM', inputs=[None], outputs=['PlotCheckM.tsv']) << """
+gwf.target('PlotCheckM', inputs=["40-Validation"], outputs=['PlotCheckM.tsv']) << """
 # Create tab-delimited file
 for r in $(ls 40-Validation/); do
 	if [ -f 40-Validation/$r/CheckM/results.tsv ]; then
@@ -372,8 +368,9 @@ for r in $(ls 40-Validation/); do
 done > PlotCheckM.tsv
 """
 
-# Tree
-tree.mashtree(in_dir="60-Genomes/Complete", breps=100, threads=4, memory=8)
+# Tree (Mash)
+if len(os.listdir("60-Genomes/Complete")) > 2:
+	gwf.target_from_template('Tree_Complete_Genomes', tree.mashtree(in_dir="60-Genomes/Complete", breps=100, threads=4, memory=8))
 
 # SummaryTable
 gwf.target('SummaryTableCompleteGenomes', inputs=[file], outputs=['SummaryTableCompleteGenomes.tsv']) << """
