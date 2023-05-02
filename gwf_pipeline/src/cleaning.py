@@ -55,14 +55,14 @@ def remove_duplicate_contigs(assembly, prefix, threshold, out_dir, threads, memo
 
 	# GWF
 	inputs = ["{}".format(assembly)]
-	outputs = ["{}/{}.clean-overlap.fasta".format(out_dir, prefix), "{}/keep_contigs.txt".format(out_dir), "{}/{}.distmat".format(out_dir, prefix), "{}/{}.tree".format(out_dir, prefix)]
+	outputs = ["{}/{}.clean-overlap.fasta".format(out_dir, prefix)]
 	options = {'cores': '{}'.format(threads), 'memory': '{}g'.format(memory), 'queue': 'short', 'walltime': '4:00:00'}
 
 	spec='''
 	# Source conda to work with environments
 	source ~/programas/minconda3.9/etc/profile.d/conda.sh
 
-    if [ $(grep "^>" {assembly} | wc -l) > 1 ]; then
+    if [ $(grep "^>" {assembly} | wc -l) -gt 1 ]; then
     
         # Split assembly in contigs
         conda activate SeqKit
@@ -87,7 +87,7 @@ def remove_duplicate_contigs(assembly, prefix, threshold, out_dir, threads, memo
         rm {out_dir}/tmp.txt
     
     else
-        cp {assembly} > {out_dir}/{prefix}.clean-overlap.fasta
+        cp {assembly} {out_dir}/{prefix}.clean-overlap.fasta
     fi
 
 	'''.format(assembly=assembly, prefix=prefix, threshold=threshold, out_dir=out_dir, threads=threads)

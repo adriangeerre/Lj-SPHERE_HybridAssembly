@@ -124,6 +124,9 @@ def assembly_validation(assembly, database, out_dir, threads, memory):
 	# Folder structure
 	if os.path.isdir(out_dir) == False: os.makedirs(out_dir)
 
+	# Variable
+	assembly_folder = "/".join(assembly.split("/")[:-1]) + "/"
+
 	# GWF
 	inputs = ["{}".format(assembly)]
 	outputs = ["{}/Busco/short_summary.specific.{}.Busco.txt".format(out_dir,database), "{}/CheckM/results.tsv".format(out_dir)]
@@ -140,6 +143,6 @@ def assembly_validation(assembly, database, out_dir, threads, memory):
 	conda activate CheckM
 	checkm lineage_wf -x fasta -t {threads} {assembly_folder} {out_dir}/CheckM --reduced_tree
 	checkm qa {out_dir}/CheckM/lineage.ms {out_dir}/CheckM -f {out_dir}/CheckM/results.tsv --tab_table -t {threads}
-	'''.format(assembly=assembly, assembly_folder=assembly.strip("assembly.fasta"), database=database, out_dir=out_dir, threads=threads)
+	'''.format(assembly=assembly, assembly_folder=assembly_folder, database=database, out_dir=out_dir, threads=threads)
 
 	return AnonymousTarget(inputs=inputs, outputs=outputs, options=options, spec=spec)
