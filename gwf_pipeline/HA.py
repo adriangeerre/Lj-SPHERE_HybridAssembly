@@ -64,7 +64,7 @@ LjTaxa = create_dict(file_path, 4)
 LjGenus = create_dict(file_path, 6)
 
 # Busco databases
-busco_dict = {'Actinomycetales': 'actinobacteria_class_odb10', 'Flavobacteriales': 'flavobacteriales_odb10', 'Bacillales': 'bacillales_odb10', 'Burkholderiales': 'burkholderiales_odb10', 'Caulobacterales': 'alphaproteobacteria_odb10', 'Rhizobiales': 'rhizobiales_odb10', 'Sphingomonadales': 'sphingomonadales_odb10', 'Pseudomonadales': 'pseudomonadales_odb10', 'Xanthomonadales': 'xanthomonadales_odb10', 'NA': 'NA'}
+busco_dict = {'Actinomycetales': 'actinobacteria_class_odb10', 'Flavobacteriales': 'flavobacteriales_odb10', 'Bacillales': 'bacillales_odb10', 'Burkholderiales': 'burkholderiales_odb10', 'Caulobacterales': 'alphaproteobacteria_odb10', 'Rhizobiales': 'rhizobiales_odb10', 'Sphingomonadales': 'sphingomonadales_odb10', 'Pseudomonadales': 'pseudomonadales_odb10', 'Xanthomonadales': 'xanthomonadales_odb10', 'Hyphomicrobiales':'alphaproteobacteria_odb10', 'NA': 'NA'}
 
 # Execution
 #----------
@@ -188,7 +188,9 @@ for row in f:
 					log.write(f"PGAP input files might be missing or the defined genus is \"NA\" for sample {folder}\n")
 
 			# Remove empty contigs
-			cleaning.remove_empty_contigs(assembly="30-HybridAssembly/{}/unicycler/{}.clean-overlap.fasta".format(folder, folder), gff="50-Annotation/{}/unicycler/annotation/annot.gff".format(folder), out_dir="30-HybridAssembly/{}/unicycler/")
+			gff="50-Annotation/{}/unicycler/annotation/annot.gff".format(folder)
+			if os.path.exists("30-HybridAssembly/{}/unicycler/{}.clean-overlap.fasta".format(folder, folder)) and os.path.exists(gff):
+				cleaning.remove_empty_contigs(assembly="30-HybridAssembly/{}/unicycler/{}.clean-overlap.fasta".format(folder, folder), gff="50-Annotation/{}/unicycler/annotation/annot.gff".format(folder), out_dir="30-HybridAssembly/{}/unicycler/".format(folder))
 
 			# Check annotation output
 			if os.path.isdir("50-Annotation/{}/unicycler/annotation".format(folder)):
@@ -292,15 +294,16 @@ for row in f:
 					log.write(f"PGAP input files might be missing or the defined genus is \"NA\" for sample {folder}\n")
 
 			# Remove empty contigs
-			cleaning.remove_empty_contigs(assembly="20-Assembly/{}/flye/{}.clean-overlap.fasta".format(folder, folder), gff="50-Annotation/{}/flye/annotation/annot.gff".format(folder), out_dir="20-Assembly/{}/flye/")
+			gff="50-Annotation/{}/flye/annotation/annot.gff".format(folder)
+			if os.path.exists(gff):
+				cleaning.remove_empty_contigs(assembly="20-Assembly/{}/flye/{}.clean-overlap.fasta".format(folder, folder), gff=gff, out_dir="20-Assembly/{}/flye/")
 
 			# Check annotation output
 			if os.path.isdir("50-Annotation/{}/flye/annotation".format(folder)):
-				a = "50-Annotation/{}/flye/annotation/annot.gff".format(folder)
 				try:
-					val_draft["av"] = validation.validate_pgap(a)
+					val_draft["av"] = validation.validate_pgap(gff)
 				except:
-					log.write(f"{bcolors.FAIL}Error: {a} is missing or empty.{bcolors.ENDC}\n")
+					log.write(f"{bcolors.FAIL}Error: {gff} is missing or empty.{bcolors.ENDC}\n")
 
 			# Improved Genome
 			if val_draft["av"] == "Pass" and not os.path.exists(f"60-Genomes/Improved/{folder}.assembly.fasta"):
