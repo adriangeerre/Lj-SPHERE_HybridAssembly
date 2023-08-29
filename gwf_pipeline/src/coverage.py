@@ -1,6 +1,44 @@
 ## Imports
 import os
+import matplotlib.pyplot as plt
 from gwf import AnonymousTarget
+
+# Functions
+def gc_by_depth(assembly):
+	# GC
+	values = {}
+	# Read into dictionary
+	d = SeqIO.to_dict(SeqIO.parse(assembly, 'fasta'))
+	# Compute gc
+	for i, j in d.items():
+		# Depth
+		depth = [k[6:][:-1] for k in j.description.split(" ") if "depth=" in k][0]
+		# GC
+		g = j.seq.count("G")
+		c = j.seq.count("C")
+		gc = (g + c)/len(j.seq) * 100
+		l = len(j.seq)
+		values[i] = [gc, float(depth), l]
+	# Return
+	return(values)
+
+def plot_gc_vs_cov(assembly, outpath, name):
+	# Get values
+	d = gc_by_depth(assembly)
+	# Divide information
+	names = list(d.keys())
+	gc = [i[0] for i in d.values()]
+	cov = [i[1] for i in d.values()]
+	lens = [i[2] / 1000 for i in d.values()]
+	# Plot
+	plt.figure(figsize=(8, 6))
+	plt.scatter(gc, cov, s=lens, c='blue', marker='o', edgecolors='black', alpha=0.3)
+	for i, name in enumerate(names):
+		plt.annotate(name, (gc[i], cov[i]), textcoords="offset points", xytext=(0,10), ha='center')
+	plt.title('GC Content vs Coverage')
+	plt.xlabel('GC Content')
+	plt.ylabel('Coverage')
+	plt.savefig(f"{outpath}/{name}.GCvsCOV.png")
 
 ## GWF function
 # Alignment Illumina
