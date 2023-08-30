@@ -64,7 +64,7 @@ LjTaxa = create_dict(file_path, 4)
 LjGenus = create_dict(file_path, 6)
 
 # Busco databases
-busco_dict = {'Actinomycetales': 'actinobacteria_class_odb10', 'Flavobacteriales': 'flavobacteriales_odb10', 'Bacillales': 'bacillales_odb10', 'Burkholderiales': 'burkholderiales_odb10', 'Caulobacterales': 'alphaproteobacteria_odb10', 'Rhizobiales': 'rhizobiales_odb10', 'Sphingomonadales': 'sphingomonadales_odb10', 'Pseudomonadales': 'pseudomonadales_odb10', 'Xanthomonadales': 'xanthomonadales_odb10', 'Hyphomicrobiales':'alphaproteobacteria_odb10', 'NA': 'NA'}
+busco_dict = {'Actinomycetales': 'actinobacteria_class_odb10', 'Flavobacteriales': 'flavobacteriales_odb10', 'Bacillales': 'bacillales_odb10', 'Burkholderiales': 'burkholderiales_odb10', 'Caulobacterales': 'alphaproteobacteria_odb10', 'Rhizobiales': 'rhizobiales_odb10', 'Sphingomonadales': 'sphingomonadales_odb10', 'Pseudomonadales': 'pseudomonadales_odb10', 'Xanthomonadales': 'xanthomonadales_odb10', 'Hyphomicrobiales':'alphaproteobacteria_odb10', 'Enterobacterales': 'enterobacterales_odb10', 'NA': 'NA'}
 
 # Execution
 #----------
@@ -129,16 +129,20 @@ for row in f:
 		log.write(f"Performing coverage for {folder}\n")
 
 		# Alignment Illumina
-		gwf.target_from_template("{}_30_align_illumina".format(folder), coverage.align_illumina(assembly="30-HybridAssembly/{}/unicycler/assembly.fasta".format(folder), illumina_corr_1="10-Correction/{}/Illumina/corrected/{}".format(folder, illumina_corr_1), illumina_corr_2="10-Correction/{}/Illumina/corrected/{}".format(folder, illumina_corr_2), out_dir="30-HybridAssembly/{}/Align".format(folder), threads=4, memory=16))
+		gwf.target_from_template("{}_30_align_illumina".format(folder), coverage.align_illumina(assembly="30-HybridAssembly/{}/unicycler/{}.clean-overlap.fasta".format(folder, folder), illumina_corr_1="10-Correction/{}/Illumina/corrected/{}".format(folder, illumina_corr_1), illumina_corr_2="10-Correction/{}/Illumina/corrected/{}".format(folder, illumina_corr_2), out_dir="30-HybridAssembly/{}/Align".format(folder), threads=4, memory=16))
 
 		# Alignment Nanopore
-		gwf.target_from_template("{}_30_align_nanopore".format(folder), coverage.align_nanopore(assembly="30-HybridAssembly/{}/unicycler/assembly.fasta".format(folder), nanopore_corr="10-Correction/{}/Nanopore/nanopore.corrected.fasta".format(folder), out_dir="30-HybridAssembly/{}/Align".format(folder), threads=4, memory=16))
+		gwf.target_from_template("{}_30_align_nanopore".format(folder), coverage.align_nanopore(assembly="30-HybridAssembly/{}/unicycler/{}.clean-overlap.fasta".format(folder, folder), nanopore_corr="10-Correction/{}/Nanopore/nanopore.corrected.fasta".format(folder), out_dir="30-HybridAssembly/{}/Align".format(folder), threads=4, memory=16))
 
 		# Coverage
 		gwf.target_from_template("{}_30_coverage".format(folder), coverage.coverage(in_dir="30-HybridAssembly/{}/Align".format(folder), out_dir="30-HybridAssembly/{}/Coverage".format(folder), memory=8))
 
 		# Coverage Plot
-		gwf.target_from_template("{}_30_plot_coverage".format(folder), coverage.plot_coverage(in_dir="30-HybridAssembly/{}/Coverage".format(folder), out_dir="30-HybridAssembly/{}/Coverage/CovPlots".format(folder), memory=8, folder=folder))
+		gwf.target_from_template("{}_30_plot_coverage".format(folder), coverage.plot_coverage(assembly="30-HybridAssembly/{}/unicycler/{}.clean-overlap.fasta".format(folder, folder), in_dir="30-HybridAssembly/{}/Coverage".format(folder), out_dir="30-HybridAssembly/{}/Coverage/CovPlots".format(folder), memory=8, folder=folder))
+
+		# GC vs Coverage
+		gwf.target_from_template("{}_30_plot_gc_vs_coverage".format(folder), coverage.plot_gc_vs_coverage(assembly="30-HybridAssembly/{}/unicycler/{}.clean-overlap.fasta".format(folder, folder), in_dir="30-HybridAssembly/{}/Coverage".format(folder), out_dir="30-HybridAssembly/{}/Coverage/GCvsCOV".format(folder), memory=4, folder=folder))
+
 
 	# 40 Validation
 	database = busco_dict[LjTaxa[folder]]
@@ -244,7 +248,10 @@ for row in f:
 			gwf.target_from_template("{}_20_coverage".format(folder), coverage.coverage(in_dir="20-Assembly/{}/Align".format(folder), out_dir="20-Assembly/{}/Coverage".format(folder), memory=8))
 
 			# Coverage Plot
-			gwf.target_from_template("{}_20_plot_coverage".format(folder), coverage.plot_coverage(in_dir="20-Assembly/{}/Coverage".format(folder), out_dir="20-Assembly/{}/Coverage/CovPlots".format(folder), memory=8, folder=folder))
+			gwf.target_from_template("{}_20_plot_coverage".format(folder), coverage.plot_coverage(assembly="20-Assembly/{}/flye/assembly.fasta".format(folder), in_dir="20-Assembly/{}/Coverage".format(folder), out_dir="20-Assembly/{}/Coverage/CovPlots".format(folder), memory=8, folder=folder))
+
+			# GC vs Coverage
+			gwf.target_from_template("{}_20_plot_gc_vs_coverage".format(folder), coverage.plot_gc_vs_coverage(assembly="20-Assembly/{}/flye/{}.clean-overlap.fasta".format(folder, folder), in_dir="20-Assembly/{}/Coverage".format(folder), out_dir="20-Assembly/{}/Coverage/GCvsCOV".format(folder), memory=4, folder=folder))
 
 		# 40 Validation
 		database = busco_dict[LjTaxa[folder]]

@@ -1,6 +1,6 @@
 ## Imports
 import os
-import matplotlib.pyplot as plt
+from Bio import SeqIO
 from gwf import AnonymousTarget
 
 # Functions
@@ -11,34 +11,16 @@ def gc_by_depth(assembly):
 	d = SeqIO.to_dict(SeqIO.parse(assembly, 'fasta'))
 	# Compute gc
 	for i, j in d.items():
-		# Depth
-		depth = [k[6:][:-1] for k in j.description.split(" ") if "depth=" in k][0]
+		# Circularity
+		circular = max([1 if "circular=" in k else 0 for k in j.description.split(" ")])
 		# GC
 		g = j.seq.count("G")
 		c = j.seq.count("C")
 		gc = (g + c)/len(j.seq) * 100
-		l = len(j.seq)
-		values[i] = [gc, float(depth), l]
+		gsize = len(j.seq)
+		values[i] = [gc, gsize, circular]
 	# Return
 	return(values)
-
-def plot_gc_vs_cov(assembly, outpath, name):
-	# Get values
-	d = gc_by_depth(assembly)
-	# Divide information
-	names = list(d.keys())
-	gc = [i[0] for i in d.values()]
-	cov = [i[1] for i in d.values()]
-	lens = [i[2] / 1000 for i in d.values()]
-	# Plot
-	plt.figure(figsize=(8, 6))
-	plt.scatter(gc, cov, s=lens, c='blue', marker='o', edgecolors='black', alpha=0.3)
-	for i, name in enumerate(names):
-		plt.annotate(name, (gc[i], cov[i]), textcoords="offset points", xytext=(0,10), ha='center')
-	plt.title('GC Content vs Coverage')
-	plt.xlabel('GC Content')
-	plt.ylabel('Coverage')
-	plt.savefig(f"{outpath}/{name}.GCvsCOV.png")
 
 ## GWF function
 # Alignment Illumina
@@ -118,19 +100,29 @@ def coverage(in_dir, out_dir, memory):
 	return AnonymousTarget(inputs=inputs, outputs=outputs, options=options, spec=spec)
 
 # Plot Coverage
-def plot_coverage(in_dir, out_dir, memory, folder):
+def plot_coverage(assembly, in_dir, out_dir, memory, folder):
 	# Folder structure
 	if os.path.isdir(out_dir) == False: os.makedirs(out_dir)
 
-	# Number of contigs
-	if os.path.exists("30-HybridAssembly/{}/unicycler/assembly.fasta".format(folder)):
-		num_contigs = len([1 for line in open("30-HybridAssembly/{}/unicycler/assembly.fasta".format(folder)) if line.startswith(">")])
-	else:
-		num_contigs = 1
+	# Contig data
+	contig_data = "{}/{}.contig-data.tsv".format(in_dir, folder)
+	if os.path.exists(assembly):
+		if not os.path.exists(contig_data):
+			d = gc_by_depth(assembly)
+			w = open(contig_data, "w")
+			for i, j in d.items():
+				w.write(f"{i}\t{round(j[0],4)}\t{j[1]}\t{j[2]}\n")
+			w.close()
+
+	# Define outputs
+	outputs = []
+	if os.path.exists(contig_data):
+		r = open(contig_data, "r")
+		contigs = [i.strip().split("\t")[0] for i in r]
+		outputs = ["{}/{}.pdf".format(out_dir, contig) for contig in contigs]
 
 	# GWF
 	inputs = ["{}/Illumina.cov".format(in_dir), "{}/Nanopore.cov".format(in_dir)]
-	outputs = ["{}/{}.pdf".format(out_dir, num) for num in range(1,num_contigs+1) if os.path.exists("30-HybridAssembly/{}/unicycler/assembly.fasta".format(folder))]
 	options = {'cores': 1,'memory': '{}g'.format(memory), 'queue': 'short', 'walltime': '2:00:00'}
 
 	spec='''
@@ -141,5 +133,36 @@ def plot_coverage(in_dir, out_dir, memory, folder):
 	conda activate Renv
 	Rscript src/coverage.R -i {in_dir} -o {out_dir}
 	'''.format(in_dir=in_dir, out_dir=out_dir)
+
+	return AnonymousTarget(inputs=inputs, outputs=outputs, options=options, spec=spec)
+
+# Plot GC vs Coverage
+def plot_gc_vs_coverage(assembly, in_dir, out_dir, memory, folder):
+	# Folder structure
+	if os.path.isdir(out_dir) == False: os.makedirs(out_dir)
+
+	# Contig data
+	contig_data = "{}/{}.contig-data.tsv".format(in_dir, folder)
+	if os.path.exists(assembly):
+		if not os.path.exists(contig_data):
+			d = gc_by_depth(assembly)
+			w = open(contig_data, "w")
+			for i, j in d.items():
+				w.write(f"{i}\t{round(j[0],4)}\t{j[1]}\t{j[2]}\n")
+			w.close()
+
+	# GWF
+	inputs = [assembly, "{}/Illumina.cov".format(in_dir), "{}/Nanopore.cov".format(in_dir)]
+	outputs = ["{}/{}.Illumina.mean.GCvsCOV.png".format(out_dir, folder), "{}/{}.Illumina.median.GCvsCOV.png".format(out_dir, folder), "{}/{}.Nanopore.mean.GCvsCOV.png".format(out_dir, folder), "{}/{}.Nanopore.median.GCvsCOV.png".format(out_dir, folder)]
+	options = {'cores': 1,'memory': '{}g'.format(memory), 'queue': 'short', 'walltime': '2:00:00'}
+
+	spec='''
+	# Source conda to work with environments
+	source ~/programas/minconda3.9/etc/profile.d/conda.sh
+
+	# R
+	conda activate Renv
+	Rscript src/gcvscov.R -a {assembly} -p {folder} -i {in_dir} -o {out_dir}
+	'''.format(assembly=assembly, folder=folder, in_dir=in_dir, out_dir=out_dir)
 
 	return AnonymousTarget(inputs=inputs, outputs=outputs, options=options, spec=spec)
