@@ -8,7 +8,7 @@ _Disclaimer:_ The manual curation and scaffolding of the genomes was done after 
 
 Install conda if not yet installed. Then, Install the required conda environments from the `envs` folder. The environment `HA` is the pipeline's environment and, therefore, the only enviroment to be activated. The other environments are auxiliary and automatically activated during the pipeline run.
 
-Moreover, the NCBI's software PGAP needs to be installed in your working enviroment. Warning: HPC enviroments using Slurm might caused PGAP to fail without a clear reason, in that case I recomment patching this issue with a local computer.
+Moreover, the NCBI's Prokaryotic Genome Annotation Pipeline or [PGAP](https://github.com/ncbi/pgap) needs to be installed in your working enviroment. Warning: HPC enviroments using Slurm might caused PGAP to fail without a clear reason, in that case I recomment patching this issue with a local computer.
 
 ### Required files
 
