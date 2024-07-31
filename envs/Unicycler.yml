@@ -1,0 +1,56 @@
+name: Unicycler
+channels:
+  - gwforg
+  - genomedk
+  - bioconda
+  - conda-forge
+dependencies:
+  - _libgcc_mutex=0.1=conda_forge
+  - _openmp_mutex=4.5=1_gnu
+  - _sysroot_linux-64_curr_repodata_hack=3=h5bd9786_13
+  - blast=2.5.0=hc0b0e79_3
+  - boost=1.77.0=py38h2b96118_0
+  - boost-cpp=1.77.0=h359cf19_1
+  - bzip2=1.0.8=h7f98852_4
+  - ca-certificates=2021.10.8=ha878542_0
+  - click=6.7=py_1
+  - click-plugins=1.1.1=py_0
+  - gwf=1.7.1=py_0
+  - icu=69.1=h9c3ff4c_0
+  - kernel-headers_linux-64=3.10.0=h4a8ded7_13
+  - ld_impl_linux-64=2.36.1=hea4e1c9_2
+  - libblas=3.9.0=13_linux64_openblas
+  - libcblas=3.9.0=13_linux64_openblas
+  - libffi=3.4.2=h7f98852_5
+  - libgcc-ng=11.2.0=h1d223b6_14
+  - libgfortran-ng=11.2.0=h69a702a_14
+  - libgfortran5=11.2.0=h5c6108e_14
+  - libgomp=11.2.0=h1d223b6_14
+  - liblapack=3.9.0=13_linux64_openblas
+  - libnsl=2.0.0=h7f98852_0
+  - libopenblas=0.3.18=pthreads_h8fe5266_0
+  - libstdcxx-ng=11.2.0=he4da1e4_14
+  - libzlib=1.2.11=h36c2ea0_1013
+  - llvm-openmp=8.0.1=hc9558a2_0
+  - lz4-c=1.9.3=h9c3ff4c_1
+  - miniasm=0.3_r179=h7132678_3
+  - ncurses=6.3=h9c3ff4c_0
+  - numpy=1.22.3=py38h05e7239_0
+  - openmp=8.0.1=0
+  - openssl=3.0.2=h166bdaf_1
+  - pip=22.0.4=pyhd8ed1ab_0
+  - python=3.8.12=h0744224_3_cpython
+  - python_abi=3.8=2_cp38
+  - racon=1.5.0=h7ff8a90_0
+  - readline=8.1=h46c0cb4_0
+  - setuptools=60.10.0=py38h578d9bd_0
+  - spades=3.15.4=h95f258a_0
+  - sqlite=3.37.1=h4ff8645_0
+  - sysroot_linux-64=2.17=h4a8ded7_13
+  - tk=8.6.12=h27826a3_0
+  - unicycler=0.5.0=py38h3b68952_1
+  - wheel=0.37.1=pyhd8ed1ab_0
+  - xz=5.2.5=h516909a_1
+  - zlib=1.2.11=h36c2ea0_1013
+  - zstd=1.5.2=ha95c52a_0
+prefix: /home/agomez/programas/minconda3.9/envs/Unicycler

@@ -1,0 +1,21 @@
+name: Diamond
+channels:
+  - genomedk
+  - bioconda
+  - conda-forge
+dependencies:
+  - _libgcc_mutex=0.1=conda_forge
+  - _openmp_mutex=4.5=2_gnu
+  - boost-cpp=1.74.0=h75c5d50_8
+  - bzip2=1.0.8=h7f98852_4
+  - diamond=2.0.15=hb97b32f_0
+  - icu=70.1=h27087fc_0
+  - libgcc-ng=12.1.0=h8d9b700_16
+  - libgomp=12.1.0=h8d9b700_16
+  - libstdcxx-ng=12.1.0=ha89aaad_16
+  - libzlib=1.2.11=h166bdaf_1014
+  - lz4-c=1.9.3=h9c3ff4c_1
+  - xz=5.2.5=h516909a_1
+  - zlib=1.2.11=h166bdaf_1014
+  - zstd=1.5.2=h8a70e8d_1
+prefix: /home/agomez/programas/minconda3.9/envs/Diamond

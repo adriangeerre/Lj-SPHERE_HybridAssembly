@@ -1,0 +1,8 @@
+name: SeqKit
+channels:
+  - genomedk
+  - bioconda
+  - conda-forge
+dependencies:
+  - seqkit=2.2.0=h9ee0642_0
+prefix: /home/agomez/programas/minconda3.9/envs/SeqKit
