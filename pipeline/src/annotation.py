@@ -1,9 +1,9 @@
 ## Imports
 import os
 import yaml
-import subprocess
+from gwf import AnonymousTarget
 
-## Auxiliary function
+## Auxiliary functions
 # PGAP yaml
 def pgap_files_creator(genus, assembly, out_dir):
 	# Submol
@@ -21,22 +21,28 @@ def pgap_files_creator(genus, assembly, out_dir):
 	with open(input, 'w') as yaml_file:
 		yaml.dump(dct_input, yaml_file)
 
+## GWF function
 # Annotation
-def annotation(input_yaml, out_dir, threads, memory, sif_image, conda_path, logfile):
+def annotation(assembly, input_yaml, out_dir, threads, memory):
 	# Folder structure
 	if os.path.isdir(out_dir) == False: os.makedirs(out_dir)
 
-	cmd='''
+	# GWF
+	inputs = ["{}".format(assembly), "{}".format(input_yaml)]
+	outputs = ["{}/annotation/annot.{}".format(out_dir, ext) for ext in ["faa","fna","gbk","gff","sqn"]]
+	options = {'cores': '{}'.format(threads), 'memory': '{}g'.format(memory), 'queue': 'short', 'walltime': '12:00:00'}
+
+	spec='''
 	# Cache and tmp folders
 	export SINGULARITY_CACHEDIR=/scratch/$SLURM_JOBID
 	export SINGULARITY_TMPDIR=/scratch/$SLURM_JOBID
 
+	if [ -d {out_dir}/annotation ] && [ ! -f {out_dir}/annotation/annot.gff ]; then
+		mv {out_dir}/annotation {out_dir}/annotation.previous
+	fi
+
 	# PGAP (already in path)
-	python /home/agomez/programas/PGAP/pgap.py -d -n --no-internet --ignore-all-errors --docker singularity -o {out_dir}/annotation --no-self-update --memory {memory} --cpus {threads} --container-path {sif_image} {input_yaml}
-	'''.format(input_yaml=input_yaml, out_dir=out_dir, sif_image=sif_image, memory=memory, threads=threads, conda_path=conda_path)
+	python /home/agomez/programas/PGAP/pgap.py -d -n --no-internet --ignore-all-errors --docker singularity -o {out_dir}/annotation --memory {memory} --container-path ~/programas/SingularityImages/pgap_2022-08-11.build6275.sif {input_yaml}
+	'''.format(input_yaml=input_yaml, out_dir=out_dir, memory=memory)
 
-	# Exec and log
-	f = open(logfile, "a")
-	subprocess.check_call(cmd, shell=True, stdout=f, stderr=f)
-	f.close()
-
+	return AnonymousTarget(inputs=inputs, outputs=outputs, options=options, spec=spec)

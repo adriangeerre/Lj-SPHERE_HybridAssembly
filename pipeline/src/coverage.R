@@ -32,14 +32,6 @@ opt = parse_args(OptionParser(option_list=option_list))
 # Read file
 f <- list.files(opt$i, full.names=T)
 f <- f[grepl(".cov",f)]
-
-# Check files
-if (length(f) < 2) {
-  print("ERROR: some of the coverage files were not found.")
-  # invokeRestart("abort")
-}
-
-# List
 dfs <- lapply(f, function(x) read.delim(x, sep="\t",header=F))
 
 # Rename inside lists

@@ -1,7 +1,7 @@
 ## Imports
 import os
 import statistics as st # Python v3.4 or above
-import subprocess
+from gwf import AnonymousTarget
 
 ## Auxiliary functions
 # Busco
@@ -97,33 +97,43 @@ def validate_pgap(gff):
 	else:
 		return "Failed"
 
+## GWF function
 # Quast
-def quast(assembly, out_dir, threads, conda_path, logfile):
+def quast(assembly, out_dir, threads, memory):
 	# Folder structure
 	if os.path.isdir(out_dir) == False: os.makedirs(out_dir)
 
-	cmd='''/bin/bash -c "
+	# GWF
+	inputs = ["{}".format(assembly)]
+	outputs = ["{}/report.tsv".format(out_dir)]
+	options = {'cores': '{}'.format(threads),'memory': '{}g'.format(memory), 'queue': 'normal', 'walltime': '12:00:00'}
+
+	spec='''
 	# Source conda to work with environments
-	source {conda_path}/etc/profile.d/conda.sh
+	source ~/programas/minconda3.9/etc/profile.d/conda.sh
 
 	# Quast
 	conda activate Quast
-	quast -o {out_dir} -t {threads} {assembly}"
-	'''.format(assembly=assembly, out_dir=out_dir, threads=threads, conda_path=conda_path)
+	quast -o {out_dir} -t {threads} {assembly}
+	'''.format(assembly=assembly, out_dir=out_dir, threads=threads)
 
-	# Exec and log
-	f = open(logfile, "a")
-	subprocess.check_call(cmd, shell=True, stdout=f, stderr=f)
-	f.close()
+	return AnonymousTarget(inputs=inputs, outputs=outputs, options=options, spec=spec)
 
 # Validation
-def assembly_validation(assembly, database, out_dir, threads, conda_path, logfile):
+def assembly_validation(assembly, database, out_dir, threads, memory):
 	# Folder structure
 	if os.path.isdir(out_dir) == False: os.makedirs(out_dir)
 
-	cmd='''/bin/bash -c "
+	# Variable
+	assembly_folder = "/".join(assembly.split("/")[:-1]) + "/"
+
+	# GWF
+	inputs = ["{}".format(assembly)]
+	outputs = ["{}/Busco/short_summary.specific.{}.Busco.txt".format(out_dir,database), "{}/CheckM/results.tsv".format(out_dir)]
+	options = {'cores': '{}'.format(threads), 'memory': '{}g'.format(memory), 'queue': 'normal', 'walltime': '2:00:00'}
+	spec='''
 	# Source conda to work with environments
-	source {conda_path}/etc/profile.d/conda.sh
+	source ~/programas/minconda3.9/etc/profile.d/conda.sh
 
 	# BUSCO
 	conda activate Busco
@@ -132,10 +142,7 @@ def assembly_validation(assembly, database, out_dir, threads, conda_path, logfil
 	# CheckM
 	conda activate CheckM
 	checkm lineage_wf -x fasta -t {threads} {assembly_folder} {out_dir}/CheckM --reduced_tree
-	checkm qa {out_dir}/CheckM/lineage.ms {out_dir}/CheckM -f {out_dir}/CheckM/results.tsv --tab_table -t {threads}"
-	'''.format(assembly=assembly, assembly_folder=assembly.strip("assembly.fasta"), database=database, out_dir=out_dir, threads=threads, conda_path=conda_path)
+	checkm qa {out_dir}/CheckM/lineage.ms {out_dir}/CheckM -f {out_dir}/CheckM/results.tsv --tab_table -t {threads}
+	'''.format(assembly=assembly, assembly_folder=assembly_folder, database=database, out_dir=out_dir, threads=threads)
 
-	# Exec and log
-	f = open(logfile, "a")
-	subprocess.check_call(cmd, shell=True, stdout=f, stderr=f)
-	f.close()
+	return AnonymousTarget(inputs=inputs, outputs=outputs, options=options, spec=spec)
