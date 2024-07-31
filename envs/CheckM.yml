@@ -123,4 +123,3 @@ dependencies:
       - checkm-genome==1.2.0
       - dendropy==4.5.2
       - scipy==1.8.0
-prefix: /home/agomez/programas/minconda3.9/envs/CheckM

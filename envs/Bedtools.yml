@@ -35,4 +35,3 @@ dependencies:
   - xz=5.2.5=h516909a_1
   - zipp=3.7.0=pyhd8ed1ab_1
   - zlib=1.2.11=h36c2ea0_1013
-prefix: /home/agomez/programas/minconda3.9/envs/Bedtools

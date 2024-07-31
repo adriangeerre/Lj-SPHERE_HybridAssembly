@@ -18,4 +18,3 @@ dependencies:
   - libstdcxx-ng=12.1.0=ha89aaad_16
   - libzlib=1.2.11=h166bdaf_1014
   - zlib=1.2.11=h166bdaf_1014
-prefix: /home/agomez/programas/minconda3.9/envs/FastANI

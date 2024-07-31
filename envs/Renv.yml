@@ -235,4 +235,3 @@ dependencies:
   - zipp=3.7.0=pyhd8ed1ab_1
   - zlib=1.2.13=hd590300_5
   - zstd=1.5.2=ha95c52a_0
-prefix: /home/agomez/programas/minconda3.9/envs/Renv
