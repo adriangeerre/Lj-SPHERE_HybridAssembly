@@ -32,8 +32,8 @@ Before using the pipeline, look into what is and how to use [GWF](https://gwf.ap
 
 ```
 conda activate HA
-gwf -f HA.py status
-gwf -f HA.py run <YOUR_GENOME>_01_qc_illumina
+gwf -f HA.py status <YOUR_GENOME>_*
+gwf -f HA.py run <YOUR_GENOME>_<STEP>
 ```
 
 Be aware of the large amount of jobs that are created by the pipeline, I do not recommend to run all at once.
@@ -41,5 +41,9 @@ Be aware of the large amount of jobs that are created by the pipeline, I do not 
 ### ToDo
 
 - Remove hard-coded busco database and taxonomy within pipeline script
-- Remove hard-coded conda environment
+- Remove hard-coded conda environment in auxiliary scripts
 - Provide alternative to PGAP if fails during run or lack of local computer
+
+### Acknowledgments
+
+This pipeline was inspired by Benjamin Perry's hybrid assembly workflow ([Github repository](https://github.com/BenjaminJPerry/HybridAssembly)).
