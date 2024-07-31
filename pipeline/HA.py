@@ -334,57 +334,7 @@ for row in f:
 	# Close log file
 	log.close()
 
-# Completness vs Contamination
-gwf.target('PlotCheckM', inputs=["40-Validation"], outputs=['PlotCheckM.tsv']) << """
-# Create tab-delimited file
-for r in $(ls 40-Validation/); do
-	if [ -f 40-Validation/$r/CheckM/results.tsv ]; then
-		# Completness and Contamination
-		completness=$(cat 40-Validation/$r/unicycler/CheckM/results.tsv | cut -f 12 | tail -n 1)
-		contamination=$(cat 40-Validation/$r/unicycler/CheckM/results.tsv | cut -f 13 | tail -n 1)
-	else
-		completness=NA
-		contamination=NA
-	fi
-
-	# Status
-	if [ -f 60-Genomes/Complete/$r.assembly.fasta ]; then
-		status="Complete"
-		# Contigs
-		contigs=$(grep "^>" 30-HybridAssembly/"$r"/unicycler/"$r".clean.fasta | wc -l)
-	elif [ -f 60-Genomes/Improved/"$r".assembly.fasta ]; then
-		status="Improved"
-		# Contigs
-		contigs=$(grep "^>" 30-Assembly/"$r"/flye/$r.clean.fasta | wc -l)
-	else
-		status="Failed"
-		# Contigs
-		if [ -f 30-HybridAssembly/"$r"/unicycler/$r.clean.fasta ]; then
-			contigs=$(grep "^>" 30-HybridAssembly/"$r"/unicycler/$r.clean.fasta | wc -l)
-		elif [ -f 30-HybridAssembly/"$r"/unicycler/assembly.fasta ]; then
-			contigs=$(grep "^>" 30-HybridAssembly/"$r"/unicycler/assembly.fasta | wc -l)
-		elif [ -f 20-Assembly/"$r"/unicycler/"$r".clean.fasta ]; then
-			contigs=$(grep "^>" 20-Assembly/"$r"/unicycler/$r.clean.fasta | wc -l)
-		elif [ -f 20-Assembly/"$r"/unicycler/assembly.fasta ]; then
-			contigs=$(grep "^>" 20-Assembly/"$r"/unicycler/assembly.fasta | wc -l)
-		else
-			contigs=NA
-		fi
-	fi
-	
-	# Print row
-	printf "$r\t$completness\t$contamination\t$contigs\t$status\n"
-
-done > PlotCheckM.tsv
-"""
-
 # Tree (Mash)
 if os.path.isdir("60-Genomes/Complete"):
 	if len(os.listdir("60-Genomes/Complete")) > 2:
 		gwf.target_from_template('Tree_Complete_Genomes', tree.mashtree(in_dir="60-Genomes/Complete", breps=100, threads=4, memory=8))
-
-# SummaryTable
-gwf.target('SummaryTableCompleteGenomes', inputs=[file], outputs=['SummaryTableCompleteGenomes.tsv']) << """
-echo -n "Hello " > greeting.txt
-cat name.txt >> greeting.txt
-"""
