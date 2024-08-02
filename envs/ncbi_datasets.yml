@@ -1,0 +1,9 @@
+name: ncbi_datasets
+channels:
+  - genomedk
+  - bioconda
+  - conda-forge
+dependencies:
+  - ca-certificates=2024.2.2=hbcca054_0
+  - ncbi-datasets-cli=16.17.3=ha770c72_2
+prefix: /home/agomez/programas/minconda3.9/envs/ncbi_datasets

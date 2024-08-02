@@ -31,6 +31,7 @@ Unfortunately, the code is not yet polished to run automatically in new envirome
 Before using the pipeline, look into what is and how to use [GWF](https://gwf.app/).
 
 ```
+# gwf config set backend slurm (If could not connect to workers on port 12345)
 conda activate HA
 gwf -f HA.py status <YOUR_GENOME>_*
 gwf -f HA.py run <YOUR_GENOME>_<STEP>
