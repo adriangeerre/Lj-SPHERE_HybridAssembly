@@ -22,7 +22,7 @@ def params():
 
 	return args
 
-## Execution
+## Functions
 # ----------
 
 # Parse GTDB
@@ -54,27 +54,42 @@ def parse_gtdb(infile):
 	return res
 
 # Download metadata
-def download_ncbi_metadata(res, outdir, outfile):
+def download_ncbi_metadata(res, outdir):
 	# Loop
 	for genome, GCFs in res.items():
 		for GCF in GCFs.split(";"):
-			# Define execution
-			cmd = '''/bin/bash -c "
-			# Conda
-			source ~/programas/minconda3.9/etc/profile.d/conda.sh
-			conda activate Entrez
+			if not os.path.exists(f"{outdir}/{genome}/{GCF}/{GCF}.entrez.tsv"):
+				# Define execution
+				cmd = '''/bin/bash -c "
+				# Conda
+				source ~/programas/minconda3.9/etc/profile.d/conda.sh
+				conda activate Entrez
 
-			# Download dataset
-			printf '{genome};{GCF};$(esearch -db assembly -query "{GCF}" | esummary | xtract -pattern DocumentSummary -sep ";" -element SpeciesName,AssemblyStatus,SpeciesTaxid,RefSeq_category)' >> {outdir}/{outfile}
-			'''.format(GCF=GCF, genome=genome, outdir=outdir, outfile=outfile)
+				# Download dataset
+				echo "{genome},{GCF},$(esearch -db assembly -query "{GCF}" | esummary | xtract -pattern DocumentSummary -sep "," -element SpeciesName,AssemblyStatus,SpeciesTaxid,RefSeq_category | tr " " "_")" > {outdir}/{genome}/{GCF}/{GCF}.entrez.tsv"
+				'''.format(GCF=GCF, genome=genome, outdir=outdir)
 
-			# Execute
-			try:
-				subprocess.check_call(cmd, shell=True)
-			except KeyboardInterrupt:
-				sys.exit(0)
-			except:
-				print(f"Error while processing {GCF}")
+				# Execute
+				try:
+					subprocess.check_call(cmd, shell=True)
+				except KeyboardInterrupt:
+					sys.exit(0)
+				except:
+					print(f"Error while processing {genome} {GCF}")
+
+def merge_entrez(outdir, outfile):
+	# Define execution
+	cmd = '''/bin/bash -c "
+	cat {outdir}/*/*/*.entrez.tsv > {outdir}/{outfile}"
+	'''.format(outdir=outdir, outfile=outfile)
+
+	# Execute
+	try:
+		subprocess.check_call(cmd, shell=True)
+	except KeyboardInterrupt:
+		sys.exit(0)
+	except:
+		print(f"Error while creating {outfile}")
 
 # Download data
 def download_ncbi_datasets(infile, outdir):
@@ -88,7 +103,7 @@ def download_ncbi_datasets(infile, outdir):
 
 		# Loop genomes
 		for GCF in GCFs.split(";"):
-			if not os.path.exists(f"{outdir}/{genome}/{GCF}/data/{GCF}/protein.faa"):
+			if not os.path.exists(f"{outdir}/{genome}/{GCF}.zip"):
 				# Define execution
 				cmd = '''/bin/bash -c "
 				# Conda
@@ -115,7 +130,8 @@ def download_ncbi_datasets(infile, outdir):
 		# Download data
 		outfile = "NCBIs.entrez.metadata.tsv"
 		if not os.path.exists("{outdir}/{outfile}"):
-			download_ncbi_metadata(res, outdir, outfile)
+			download_ncbi_metadata(res, outdir)
+			merge_entrez(outdir, outfile)
 		
 ## Execution
 # ----------
